@@ -550,6 +550,10 @@ html, body {
   color: #FFFFFF;
 }
 
+.grid-cell.dark-text .cell-badge.start {
+  color: #DBEAFE;
+}
+
 /* Compact adjustments for 460px grids in Scene 6 */
 .grid-wrapper.compact .y-axis,
 .grid-wrapper.compact .x-axis {

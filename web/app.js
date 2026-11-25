@@ -13,7 +13,7 @@
     s1a: 34460,
     s1b: 22490,
     s2: 40990,
-    s3: 48080,
+    s3: 62130,
     s4: 39230,
     s5: 44110,
     s6: 56930,
@@ -587,7 +587,7 @@
       x1: pad.l, y1: yTheta, x2: W - pad.r, y2: yTheta,
       stroke: "#EF4444", "stroke-width": 2, "stroke-dasharray": "8 6",
     }));
-    const tLbl = svgEl("text", { x: W - pad.r - 4, y: yTheta - 8, "text-anchor": "end", fill: "#DC2626", "font-size": 14, "font-weight": 700 });
+    const tLbl = svgEl("text", { x: pad.l + 8, y: yTheta - 8, "text-anchor": "start", fill: "#DC2626", "font-size": 14, "font-weight": 700 });
     tLbl.textContent = "Ngưỡng θ = 10⁻⁴";
     svg.appendChild(tLbl);
 
@@ -888,14 +888,16 @@
       };
     }
 
-    // 3. Value Iteration (s3: 48.08s)
+    // 3. Value Iteration & Trích xuất chính sách (s3: 62.13s)
     function scene3() {
       let grid = null;
       let k = 0;
+      let extracted = false;
       let updateChart = null;
       let iterTextEl = null;
       let convBoxEl = null;
       const maxIter = DATA.vi.iterations; // 48
+      const S3_BULLETS = ["s3-b1", "s3-b2"];
 
       function renderIter(idx) {
         k = Math.max(0, Math.min(maxIter, idx));
@@ -915,12 +917,24 @@
         }
       }
 
-      const stepMs = 710; // 48 * 710ms = 34.08s -> bắt đầu ở 6.8s, hội tụ đúng 40.9s
+      function showExtractedPolicy() {
+        if (extracted) return;
+        extracted = true;
+        if (k < maxIter) renderIter(maxIter);
+        grid.setCellValues(DATA.vi.V_star, true, { smallCorner: true });
+        grid.setPolicy(DATA.vi.pi_star, { color: "#FFFFFF", arrowScale: 0.92, opacity: 0.95 });
+        convBoxEl.className = "highlight-box green";
+        convBoxEl.textContent = "Đã trích xuất π*(s) = argmax Q*(s,a) từ V*! Ví dụ tại (1,1): đi Lên (6.96) > sang Phải (6.65).";
+      }
+
+      const stepMs = 670; // 48 * 670ms = 32.16s -> bắt đầu ở 6.8s, hội tụ đúng 38.96s
       function tick() {
         if (k < maxIter) {
           renderIter(k + 1);
           if (k < maxIter) {
             scheduler.after(stepMs, tick);
+          } else if (!isAutoPlay()) {
+            scheduler.after(1200, showExtractedPolicy);
           }
         }
       }
@@ -928,6 +942,7 @@
       return {
         enter() {
           k = 0;
+          extracted = false;
           stageBody.innerHTML = `
             <div class="split-layout">
               <div class="left-col" id="s3-grid"></div>
@@ -936,7 +951,8 @@
                   <h2 class="scene-heading">3. Thuật toán Value Iteration</h2>
                   <p class="scene-subtitle">Cập nhật trực tiếp Bellman Optimality Backup trên toàn bộ 16 trạng thái.</p>
                   <ul class="bullet-list">
-                    <li class="bullet-item"><span class="bullet-dot"></span><span>Ô gần Đích tăng giá trị nhanh; ô sát bẫy bị kéo giảm do 20% trượt.</span></li>
+                    <li id="s3-b1" class="bullet-item"><span class="bullet-dot"></span><span><strong>Bước 1 (Tính V*):</strong> Lan truyền giá trị từ Đích; ô sát bẫy giảm do 20% trượt.</span></li>
+                    <li id="s3-b2" class="bullet-item"><span class="bullet-dot"></span><span><strong>Bước 2 (Trích xuất π*):</strong> Từ V*, nhìn trước 1 bước chọn hướng argmax Q*(s,a).</span></li>
                   </ul>
                   <div id="s3-conv" class="highlight-box"></div>
                 </div>
@@ -957,14 +973,30 @@
           renderIter(0);
 
           if (isAutoPlay()) {
+            setCue("s3-b1", S3_BULLETS);
             scheduler.after(6800, tick);
-            // 22.2s: Câu 4 — ô lân cận đích (3,4) [s=14] & (4,3) [s=11]
-            scheduler.after(22200, () => grid.setFocusCells([14, 11], "green"));
-            // 26.6s: Câu 5 — ô sát bẫy hàng 1: (3,1) [s=2] & (4,1) [s=3]
-            scheduler.after(26600, () => grid.setFocusCells([2, 3], "red"));
+            // 19.9s: Câu 4 — ô lân cận đích (3,4) [s=14] & (4,3) [s=11]
+            scheduler.after(19900, () => grid.setFocusCells([14, 11], "green"));
+            // 26.8s: Câu 5 — ô sát bẫy hàng 1: (3,1) [s=2] & (4,1) [s=3]
+            scheduler.after(26800, () => grid.setFocusCells([2, 3], "red"));
             scheduler.after(34000, () => grid.setFocusCells([]));
-            // 43.0s: Câu 7 — V*(1,1) = 6.78
-            scheduler.after(43000, () => grid.setFocusCells([0], "blue"));
+            // 39.2s: Câu 6 — hội tụ 48 vòng, V*(1,1) = 6.78
+            scheduler.after(39200, () => grid.setFocusCells([0], "blue"));
+            // 43.7s: Câu 7 — chuyển sang Bước 2: Trích xuất chính sách π* từ V*
+            scheduler.after(43700, () => {
+              grid.setFocusCells([]);
+              setCue("s3-b2", S3_BULLETS);
+            });
+            scheduler.after(46500, showExtractedPolicy);
+            // 55.0s: Câu 8 — ví dụ nhìn trước 1 bước tại (1,1): Lên (1,2)=6.96 vs Phải (2,1)=6.65
+            scheduler.after(55000, () => {
+              grid.setFocusCells([0, 4], "green");
+              grid.cells[1].el.classList.add("focus-amber");
+            });
+            scheduler.after(61200, () => {
+              grid.setFocusCells([]);
+              setCue([], S3_BULLETS);
+            });
           } else {
             scheduler.after(1200, tick);
           }
@@ -974,6 +1006,11 @@
             scheduler.clearAll();
             grid.setFocusCells([]);
             renderIter(k + 1);
+          } else if (!extracted) {
+            scheduler.clearAll();
+            grid.setFocusCells([]);
+            setCue("s3-b2", S3_BULLETS);
+            showExtractedPolicy();
           } else {
             onSceneDone();
           }

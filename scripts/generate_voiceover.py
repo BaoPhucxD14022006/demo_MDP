@@ -78,22 +78,24 @@ SEGMENTS: list[dict] = [
     {
         "key": "s3",
         "filename": "seg_3.mp3",
-        "title": "Cảnh 3 — Thuật toán Value Iteration (Lặp giá trị tối ưu)",
-        "visual_cue": "Bản đồ nhiệt V(s) lan tỏa dần từ Đích qua 48 vòng lặp, đồng thời đường cong max |ΔV| trên đồ thị log tiến dần xuống dưới ngưỡng θ = 10⁻⁴.",
+        "title": "Cảnh 3 — Thuật toán Value Iteration & Trích xuất chính sách π*",
+        "visual_cue": "Bản đồ nhiệt V(s) lan tỏa qua 48 vòng lặp đến khi hội tụ (V*(1,1)=6.78), sau đó phủ mũi tên trích xuất chính sách π* trực tiếp lên bảng V*.",
         "tts_sentences": [
             "Đầu tiên là thuật toán Lặp giá trị, hay còn gọi là Va liu I tơ rây sần.",
             "Thuật toán khởi tạo giá trị V bằng không, rồi lặp lại phép cập nhật tối ưu BEO men trên toàn bộ mười sáu trạng thái.",
             "Ở mỗi vòng lặp, giá trị mới của một ô bằng giá trị lớn nhất theo bốn hành động của phần thưởng tức thời cộng với gam ma nhân kỳ vọng các ô kế tiếp.",
             "Trên bản đồ nhiệt, giá trị dương lan tỏa ngược dần từ ô đích bốn bốn ra các ô lân cận như ba bốn và bốn ba.",
-            "Ngược lại, hai ô hàng một là ba một và bốn một có giá trị thấp hơn hẳn do nằm sát bẫy và chịu hai mươi phần trăm nguy cơ trượt vào bẫy âm mười.",
-            "Trên đồ thị sai số cực đại theo thang lô ga rít, đường cong giảm đều và cắt xuống dưới ngưỡng thê ta bằng mười mũ trừ bốn sau đúng bốn mươi tám vòng lặp.",
-            "Tại điểm xuất phát một một, giá trị kỳ vọng tối ưu V sao đạt sáu phẩy bảy mươi tám.",
+            "Ngược lại, hai ô hàng một là ba một và bốn một có giá trị thấp hơn hẳn do nằm sát bẫy và chịu hai mươi phần trăm nguy cơ trượt.",
+            "Trên đồ thị thang lô ga rít, sai số cực đại giảm đều và cắt xuống ngưỡng mười mũ trừ bốn sau bốn mươi tám vòng lặp, cho V sao tại một một bằng sáu phẩy bảy mươi tám.",
+            "Tuy nhiên, riêng bảng số V sao chưa chỉ ra ngay hướng đi; mục đích của việc tính V sao là để bước cuối cùng ta trích xuất ra chính sách tối ưu pi sao.",
+            "Tại mỗi ô, rô bốt nhìn trước một bước sang các ô kề cạnh và chọn hành động cho kỳ vọng cao nhất, chẳng hạn từ một một chọn đi lên ô sáu phẩy chín sáu thay vì sang phải sáu phẩy sáu lăm.",
         ],
         "display_text": (
             "Đầu tiên là thuật toán **Value Iteration**. Ta khởi tạo $V(s) = 0$ rồi lặp lại phép cập nhật Bellman Optimality Backup trên toàn bộ 16 trạng thái: "
             "$V_{k+1}(s) \\leftarrow \\max_a \\sum_{s'} P(s' \\mid s,a)[R + \\gamma V_k(s')]$.\n\n"
-            "Trên bản đồ nhiệt, giá trị dương lan tỏa ngược dần từ ô Đích `(4,4)`. Ngược lại, hai ô `(3,1)` và `(4,1)` có giá trị thấp hơn hẳn do nằm sát bẫy và chịu 20% nguy cơ trượt vào bẫy `−10`.\n\n"
-            "Trên đồ thị sai số cực đại thang log, đường cong giảm đều và cắt xuống dưới ngưỡng $\\theta = 10^{-4}$ sau đúng **48 vòng lặp**, cho giá trị kỳ vọng tối ưu tại ô xuất phát $V^*(1,1) = 6.78$."
+            "Trên bản đồ nhiệt, giá trị dương lan tỏa ngược dần từ ô Đích `(4,4)`. Ngược lại, hai ô `(3,1)` và `(4,1)` có giá trị thấp hơn hẳn do nằm sát bẫy và chịu 20% nguy cơ trượt. "
+            "Sau đúng **48 vòng lặp**, sai số $\\max|\\Delta V|$ cắt xuống dưới ngưỡng $\\theta = 10^{-4}$, cho $V^*(1,1) = 6.78$.\n\n"
+            "**Sau khi tính xong $V^*$ để làm gì?** Riêng bảng số $V^*$ chưa chỉ ra hướng hành động, nên bước cuối cùng ta thực hiện **trích xuất chính sách (Policy Extraction)**: tại mỗi ô, robot nhìn trước 1 bước và chọn hướng cho kỳ vọng cao nhất $\\pi^*(s) = \\arg\\max_a Q^*(s,a)$ — ví dụ tại `(1,1)` chọn đi **Lên** sang `(1,2) = 6.96` thay vì sang Phải `(2,1) = 6.65`."
         ),
     },
     {

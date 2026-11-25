@@ -1,6 +1,6 @@
 # KỊCH BẢN & LỜI THUYẾT TRÌNH DEMO MDP GRIDWORLD 4×4 (~5 PHÚT)
 
-- **Tổng thời lượng audio:** `04:53` (293.5 giây)
+- **Tổng thời lượng audio:** `05:08` (307.5 giây)
 - **Giọng đọc AI:** `pnnbao-ump/VieNeu-TTS-v3-Turbo` (48 kHz)
 - **File âm thanh tổng hợp:** `web/audio/full_voiceover_5min.mp3` (và `.wav`)
 - **Cách quay video khớp lời tự động:** Mở `web/index.html`, bấm **F** (toàn màn hình) → **H** (ẩn thanh phím tắt) → **A** (tự động phát hình + giọng đọc từ đầu đến cuối).
@@ -14,10 +14,10 @@
 | `00:00 – 00:34` | Cảnh 1 (Phần 1) — Mô hình hóa MDP trên GridWorld 4x4 | 34.5s |
 | `00:36 – 00:58` | Cảnh 1 (Phần 2) — Động lực chuyển trạng thái ngẫu nhiên 80 / 10 / 10 | 22.5s |
 | `00:59 – 01:40` | Cảnh 2 — Agent hành động ngẫu nhiên (Baseline thất bại) | 41.0s |
-| `01:42 – 02:30` | Cảnh 3 — Thuật toán Value Iteration (Lặp giá trị tối ưu) | 48.1s |
-| `02:31 – 03:10` | Cảnh 4 — Thuật toán Policy Iteration (Lặp chính sách) | 39.2s |
-| `03:11 – 03:55` | Cảnh 5 — Thực thi chính sách tối ưu π* | 44.1s |
-| `03:57 – 04:53` | Cảnh 6 — Đối chiếu π* vs Đường tắt sát bẫy | 56.9s |
+| `01:42 – 02:44` | Cảnh 3 — Thuật toán Value Iteration & Trích xuất chính sách π* | 62.1s |
+| `02:45 – 03:24` | Cảnh 4 — Thuật toán Policy Iteration (Lặp chính sách) | 39.2s |
+| `03:25 – 04:09` | Cảnh 5 — Thực thi chính sách tối ưu π* | 44.1s |
+| `04:11 – 05:08` | Cảnh 6 — Đối chiếu π* vs Đường tắt sát bẫy | 56.9s |
 
 ---
 
@@ -56,20 +56,20 @@ Vì vậy, ta cần áp dụng hai thuật toán Quy hoạch động kinh điể
 
 ---
 
-## [01:42 – 02:30] Cảnh 3 — Thuật toán Value Iteration (Lặp giá trị tối ưu)
+## [01:42 – 02:44] Cảnh 3 — Thuật toán Value Iteration & Trích xuất chính sách π*
 
-> **Hiệu ứng trên màn hình:** Bản đồ nhiệt V(s) lan tỏa dần từ Đích qua 48 vòng lặp, đồng thời đường cong max |ΔV| trên đồ thị log tiến dần xuống dưới ngưỡng θ = 10⁻⁴.  
-> **File audio:** `web/audio/seg_3.mp3` (48.1s)
+> **Hiệu ứng trên màn hình:** Bản đồ nhiệt V(s) lan tỏa qua 48 vòng lặp đến khi hội tụ (V*(1,1)=6.78), sau đó phủ mũi tên trích xuất chính sách π* trực tiếp lên bảng V*.  
+> **File audio:** `web/audio/seg_3.mp3` (62.1s)
 
 Đầu tiên là thuật toán **Value Iteration**. Ta khởi tạo $V(s) = 0$ rồi lặp lại phép cập nhật Bellman Optimality Backup trên toàn bộ 16 trạng thái: $V_{k+1}(s) \leftarrow \max_a \sum_{s'} P(s' \mid s,a)[R + \gamma V_k(s')]$.
 
-Trên bản đồ nhiệt, giá trị dương lan tỏa ngược dần từ ô Đích `(4,4)`. Ngược lại, hai ô `(3,1)` và `(4,1)` có giá trị thấp hơn hẳn do nằm sát bẫy và chịu 20% nguy cơ trượt vào bẫy `−10`.
+Trên bản đồ nhiệt, giá trị dương lan tỏa ngược dần từ ô Đích `(4,4)`. Ngược lại, hai ô `(3,1)` và `(4,1)` có giá trị thấp hơn hẳn do nằm sát bẫy và chịu 20% nguy cơ trượt. Sau đúng **48 vòng lặp**, sai số $\max|\Delta V|$ cắt xuống dưới ngưỡng $\theta = 10^{-4}$, cho $V^*(1,1) = 6.78$.
 
-Trên đồ thị sai số cực đại thang log, đường cong giảm đều và cắt xuống dưới ngưỡng $\theta = 10^{-4}$ sau đúng **48 vòng lặp**, cho giá trị kỳ vọng tối ưu tại ô xuất phát $V^*(1,1) = 6.78$.
+**Sau khi tính xong $V^*$ để làm gì?** Riêng bảng số $V^*$ chưa chỉ ra hướng hành động, nên bước cuối cùng ta thực hiện **trích xuất chính sách (Policy Extraction)**: tại mỗi ô, robot nhìn trước 1 bước và chọn hướng cho kỳ vọng cao nhất $\pi^*(s) = \arg\max_a Q^*(s,a)$ — ví dụ tại `(1,1)` chọn đi **Lên** sang `(1,2) = 6.96` thay vì sang Phải `(2,1) = 6.65`.
 
 ---
 
-## [02:31 – 03:10] Cảnh 4 — Thuật toán Policy Iteration (Lặp chính sách)
+## [02:45 – 03:24] Cảnh 4 — Thuật toán Policy Iteration (Lặp chính sách)
 
 > **Hiệu ứng trên màn hình:** Luân phiên Pha 1 (Đánh giá V^π) và Pha 2 (Cải tiến π, tô vàng các ô đổi hướng mũi tên); hội tụ hoàn toàn sau 3 vòng.  
 > **File audio:** `web/audio/seg_4.mp3` (39.2s)
@@ -82,7 +82,7 @@ Chỉ sau đúng **3 vòng lặp lớn**, không còn ô nào đổi hướng n�
 
 ---
 
-## [03:11 – 03:55] Cảnh 5 — Thực thi chính sách tối ưu π*
+## [03:25 – 04:09] Cảnh 5 — Thực thi chính sách tối ưu π*
 
 > **Hiệu ứng trên màn hình:** Hiển thị bộ mũi tên π* màu xanh lá; robot chạy ổn định dọc Cột 1 lên Hàng 4 rồi rẽ phải về Đích (4,4).  
 > **File audio:** `web/audio/seg_5.mp3` (44.1s)
@@ -95,7 +95,7 @@ Toàn bộ hành vi né bẫy tự nảy sinh từ phép tối ưu Bellman mà k
 
 ---
 
-## [03:57 – 04:53] Cảnh 6 — Đối chiếu π* vs Đường tắt sát bẫy
+## [04:11 – 05:08] Cảnh 6 — Đối chiếu π* vs Đường tắt sát bẫy
 
 > **Hiệu ứng trên màn hình:** Hai lưới chạy đua song song: bên trái π* (xanh lá) về đích đều đặn; bên phải đường sát bẫy (đỏ nét đứt) thường xuyên trượt vào bẫy −10.  
 > **File audio:** `web/audio/seg_6.mp3` (56.9s)
