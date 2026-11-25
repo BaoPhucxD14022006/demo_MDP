@@ -21,6 +21,10 @@ from pathlib import Path
 import numpy as np
 import pygame
 
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 # Thiết lập DPI awareness trên Windows để font chữ sắc nét
 try:
     import ctypes
@@ -28,8 +32,17 @@ try:
 except Exception:
     pass
 
-from gridworld_env import GridWorldEnv
-from value_iteration import (
+from src.gridworld_env import GridWorldEnv
+from src.sketch_style import (
+    draw_engraved_text,
+    draw_explosion,
+    draw_gem,
+    draw_robot,
+    draw_tile_edge,
+    get_tile,
+    heading_from_path,
+)
+from src.value_iteration import (
     ValueIterationSolver,
     PolicyIterationSolver,
     PolicyIterationStep,
@@ -442,39 +455,29 @@ class GridWorldView:
                 is_goal = (r, c) == (4, 4)
                 is_trap = (r, c) in {(3, 3), (2, 3)}
 
-                if is_goal:
-                    bg_col = GOAL_COLOR
-                elif is_trap:
-                    bg_col = TRAP_COLOR
-                elif is_start:
-                    bg_col = START_COLOR
-                elif self.current_phase == 3:
-                    # Bản đồ nhiệt ở Tab 3: màu sắc biến đổi theo giá trị V
-                    v_val = current_V[s]
-                    norm = max(0.0, min(1.0, (v_val - 0.0) / 10.0))
-                    bg_col = (
-                        int(30 + norm * 20),
-                        int(41 + norm * 120),
-                        int(59 + norm * 150),
-                    )
-                else:
-                    bg_col = CELL_NORMAL
+                kind = "goal" if is_goal else ("trap" if is_trap else "stone")
+                self.screen.blit(get_tile(kind, self.cell_size, r * 4 + c), cell_rect)
 
-                pygame.draw.rect(self.screen, bg_col, cell_rect)
-                pygame.draw.rect(self.screen, CELL_BORDER, cell_rect, width=1)
+                # Bản đồ nhiệt ở Tab 3: phủ màu xanh trong suốt theo giá trị V lên ô đá
+                if self.current_phase == 3 and kind == "stone" and not is_start:
+                    norm = max(0.0, min(1.0, current_V[s] / 10.0))
+                    overlay = pygame.Surface(cell_rect.size, pygame.SRCALPHA)
+                    overlay.fill((56, 189, 248, int(norm * 150)))
+                    self.screen.blit(overlay, cell_rect)
+                draw_tile_edge(self.screen, cell_rect)
 
-                coord_text = self.small_font.render(f"({r},{c})", True, (148, 163, 184))
+                coord_text = self.small_font.render(f"({r},{c})", True, (205, 195, 180))
                 self.screen.blit(coord_text, (draw_x + 6, draw_y + 4))
 
+                icon_center = (draw_x + self.cell_size // 2, draw_y + int(self.cell_size * 0.46))
                 if is_start:
-                    txt = self.bold_font.render("START", True, TEXT_WHITE)
-                    self.screen.blit(txt, txt.get_rect(center=(draw_x + self.cell_size // 2, draw_y + 24)))
+                    draw_engraved_text(
+                        self.screen, "START", self.title_font, (draw_x + self.cell_size // 2, draw_y + 30)
+                    )
                 elif is_goal:
-                    txt = self.bold_font.render("ĐÍCH (+10)", True, TEXT_WHITE)
-                    self.screen.blit(txt, txt.get_rect(center=(draw_x + self.cell_size // 2, draw_y + 36)))
+                    draw_gem(self.screen, icon_center, self.cell_size * 0.27, "+10")
                 elif is_trap:
-                    txt = self.bold_font.render("BẪY (-10)", True, TEXT_WHITE)
-                    self.screen.blit(txt, txt.get_rect(center=(draw_x + self.cell_size // 2, draw_y + 36)))
+                    draw_explosion(self.screen, icon_center, self.cell_size * 0.34, "-10")
 
                 # CHỈ HIỂN THỊ GIÁ TRỊ V Ở TAB 3
                 if self.current_phase == 3:
@@ -513,10 +516,12 @@ class GridWorldView:
             cur_r, cur_c = self.agent_path[-1]
             center_x = self.grid_x + (cur_c - 1) * self.cell_size + self.cell_size // 2
             center_y = self.grid_y + (4 - cur_r) * self.cell_size + self.cell_size // 2
-            pygame.draw.circle(self.screen, AGENT_COLOR, (center_x, center_y), 19)
-            pygame.draw.circle(self.screen, TEXT_WHITE, (center_x, center_y), 19, width=2)
-            pygame.draw.circle(self.screen, (15, 23, 42), (center_x, center_y), 9)
-            pygame.draw.circle(self.screen, (56, 189, 248), (center_x, center_y), 4)
+            draw_robot(
+                self.screen,
+                (center_x, center_y),
+                int(self.cell_size * 0.2),
+                heading=heading_from_path(self.agent_path),
+            )
 
     def _draw_right_dashboard(self, mouse_pos: tuple[int, int]) -> None:
         """Vẽ bảng thông tin chi tiết bên phải cho Tab 1, 2, 3, 4."""
@@ -899,34 +904,26 @@ class GridWorldView:
                 is_goal = (r, c) == (4, 4)
                 is_trap = (r, c) in {(3, 3), (2, 3)}
 
-                if is_goal:
-                    bg_col = GOAL_COLOR
-                elif is_trap:
-                    bg_col = TRAP_COLOR
-                elif is_start:
-                    bg_col = START_COLOR
-                else:
-                    bg_col = CELL_NORMAL
+                kind = "goal" if is_goal else ("trap" if is_trap else "stone")
+                self.screen.blit(get_tile(kind, cell_size, r * 4 + c), cell_rect)
+                draw_tile_edge(self.screen, cell_rect)
 
-                pygame.draw.rect(self.screen, bg_col, cell_rect)
-                pygame.draw.rect(self.screen, CELL_BORDER, cell_rect, width=1)
-
-                coord_text = self.mini_font.render(f"({r},{c})", True, (148, 163, 184))
+                coord_text = self.mini_font.render(f"({r},{c})", True, (205, 195, 180))
                 self.screen.blit(coord_text, (draw_x + 4, draw_y + 2))
 
+                icon_center = (draw_x + cell_size // 2, draw_y + int(cell_size * 0.44))
                 if is_start:
-                    txt = self.small_font.render("START", True, TEXT_WHITE)
-                    self.screen.blit(txt, txt.get_rect(center=(draw_x + cell_size // 2, draw_y + 16)))
+                    draw_engraved_text(
+                        self.screen, "START", self.small_font, (draw_x + cell_size // 2, draw_y + 16)
+                    )
                     # Vẽ mũi tên chỉ hướng xuất phát tại Start
                     action = policy[s]
                     arrow_center = (draw_x + cell_size // 2, draw_y + cell_size // 2 + 2)
                     draw_vector_arrow(self.screen, arrow_center, action, (255, 255, 255), length=12, head_size=5)
                 elif is_goal:
-                    txt = self.small_font.render("ĐÍCH (+10)", True, TEXT_WHITE)
-                    self.screen.blit(txt, txt.get_rect(center=(draw_x + cell_size // 2, draw_y + 24)))
+                    draw_gem(self.screen, icon_center, cell_size * 0.26, "+10")
                 elif is_trap:
-                    txt = self.small_font.render("BẪY (-10)", True, TEXT_WHITE)
-                    self.screen.blit(txt, txt.get_rect(center=(draw_x + cell_size // 2, draw_y + 24)))
+                    draw_explosion(self.screen, icon_center, cell_size * 0.32, "-10")
                 else:
                     action = policy[s]
                     arrow_center = (draw_x + cell_size // 2, draw_y + cell_size // 2 - 2)
@@ -951,9 +948,12 @@ class GridWorldView:
             cur_r, cur_c = sim_path[-1]
             center_x = x + (cur_c - 1) * cell_size + cell_size // 2
             center_y = grid_top_y + (4 - cur_r) * cell_size + cell_size // 2
-            pygame.draw.circle(self.screen, AGENT_COLOR, (center_x, center_y), 14)
-            pygame.draw.circle(self.screen, TEXT_WHITE, (center_x, center_y), 14, width=2)
-            pygame.draw.circle(self.screen, (15, 23, 42), (center_x, center_y), 6)
+            draw_robot(
+                self.screen,
+                (center_x, center_y),
+                int(cell_size * 0.19),
+                heading=heading_from_path(sim_path),
+            )
 
         # Card thông số chi tiết dưới mỗi ma trận
         info_top = grid_top_y + size + 8

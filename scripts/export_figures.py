@@ -4,23 +4,26 @@ Xuất ra thư mục figures/:
 1. demo1_heatmap_values.png: Bản đồ nhiệt giá trị V*(s) trên lưới 4x4.
 2. demo1_policy_arrows.png: Mũi tên chính sách tối ưu pi*(s).
 3. demo1_convergence.png: Đồ thị hội tụ max |Delta V| qua các vòng lặp.
-4. demo1_policy_comparison.png: So sánh quỹ đạo tối ưu vs quỹ đạo sát bẫy.
-5. demo2_ppo_learning_curve.png: Đồ thị phần thưởng huấn luyện PPO.
 """
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from gridworld_env import GridWorldEnv
-from value_iteration import ValueIterationSolver
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from src.gridworld_env import GridWorldEnv
+from src.value_iteration import ValueIterationSolver
 
 
 def export_all_figures() -> None:
-    """Tạo toàn bộ ảnh biểu đồ và lưu vào thư mục figures/."""
-    out_dir = Path("figures")
+    """Tạo toàn bộ ảnh biểu đồ và lưu vào thư mục docs/figures/."""
+    out_dir = ROOT_DIR / "docs" / "figures"
     out_dir.mkdir(parents=True, exist_ok=True)
     plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
 
@@ -109,23 +112,7 @@ def export_all_figures() -> None:
     fig.savefig(out_dir / "demo1_policy_arrows.png")
     plt.close(fig)
 
-    # ================= 2. DEMO 2: PPO LEARNING CURVE =================
-    steps_k = [16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 200]
-    rewards = [-475.0, -470.0, 78.9, -170.5, -295.1, -107.3, 79.1, 141.4, 114.8, 141.5, 114.7, 114.8, 141.5]
-
-    fig, ax = plt.subplots(figsize=(7, 4.2), dpi=200)
-    ax.plot(steps_k, rewards, marker="o", color="#10B981", linewidth=2.2, label="Phần thưởng TB / tập")
-    ax.axhline(0, color="gray", linestyle=":", linewidth=1)
-    ax.axhline(100, color="#0284C7", linestyle="--", linewidth=1.2, label="Thưởng tới đích (+100)")
-    ax.set_xlabel("Số bước huấn luyện (x 1,000 timesteps)", fontsize=10, fontweight="bold")
-    ax.set_ylabel("Phần thưởng trung bình (Episode Reward)", fontsize=10, fontweight="bold")
-    ax.set_title("Demo 2: Đường cong học của Robot AMR bằng thuật toán PPO", fontsize=11, fontweight="bold")
-    ax.legend(frameon=True, loc="lower right")
-    plt.tight_layout()
-    fig.savefig(out_dir / "demo2_ppo_learning_curve.png")
-    plt.close(fig)
-
-    print(f"Exported all 4 high-res figures to folder: {out_dir.name}")
+    print(f"Exported all 3 high-res figures to folder: {out_dir.name}")
 
 
 if __name__ == "__main__":
