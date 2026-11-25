@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import subprocess
 import tempfile
@@ -63,14 +64,14 @@ SEGMENTS: list[dict] = [
             "Bây giờ, ta quan sát tác tử hành động hoàn toàn ngẫu nhiên trên lưới bốn nhân bốn.",
             "Ở mỗi bước, rô bốt chọn ngẫu nhiên một trong bốn hướng mà không hề xét đến vị trí đích hay hai ô bẫy ở cột ba.",
             "Chỉ sau vài bước di chuyển loằng ngoằng, do có hai ô bẫy nằm ngay trung tâm cộng thêm xác suất trượt hai mươi phần trăm, rô bốt nhanh chóng rơi thẳng vào ô bẫy âm mười.",
-            "Trong một nghìn tập mô phỏng kiểm chứng bằng phương pháp Mông tê Các lô, tác tử ngẫu nhiên chỉ tới đích thành công khoảng sáu phẩy tám phần trăm.",
-            "Trong khi đó, tỉ lệ rơi bẫy lên tới hơn chín mươi phần trăm, kéo điểm thưởng trung bình xuống mức rất âm, khoảng âm chín phẩy tám mươi chín.",
+            "Kiểm chứng một nghìn tập với giới hạn tối đa năm mươi bước mỗi tập, tác tử ngẫu nhiên chỉ tới đích thành công sáu phẩy tám phần trăm.",
+            "Tỉ lệ rơi bẫy lên tới chín mươi phẩy hai phần trăm, ba phần trăm còn lại bị tham ao do đi quá năm mươi bước, kéo điểm trung bình xuống âm chín phẩy tám mươi chín.",
             "Vì vậy, ta cần áp dụng hai thuật toán Quy hoạch động kinh điển để tìm chính sách tối ưu.",
         ],
         "display_text": (
             "Bây giờ, ta quan sát tác tử hành động hoàn toàn ngẫu nhiên trên lưới 4×4. Ở mỗi bước, robot chọn đều một trong 4 hướng mà không xét đến vị trí Đích hay hai ô Bẫy ở cột 3.\n\n"
             "Chỉ sau vài bước di chuyển loằng ngoằng, cộng thêm xác suất trượt 20%, robot nhanh chóng rơi vào Bẫy `−10`. "
-            "Kiểm chứng Monte Carlo trên **1.000 tập** cho thấy: tỉ lệ thành công chỉ khoảng **6.8%**, tỉ lệ rơi bẫy lên tới **~90.8%**, điểm thưởng trung bình khoảng **−9.89**.\n\n"
+            "Kiểm chứng Monte Carlo trên **1.000 tập** (tối đa **50 bước/tập**) cho thấy: tỉ lệ thành công chỉ đạt **6.8%**, tỉ lệ rơi bẫy lên tới **90.2%**, và **3.0%** bị **Timeout** do đi quá 50 bước, kéo điểm thưởng trung bình xuống **−9.90**.\n\n"
             "Vì vậy, ta cần áp dụng hai thuật toán Quy hoạch động kinh điển để tìm chính sách tối ưu."
         ),
     },
@@ -146,14 +147,14 @@ SEGMENTS: list[dict] = [
             "Bên phải là đường tắt mạo hiểm đi sang phải hàng một rồi lên dọc cột bốn, áp sát hai ô bẫy.",
             "Cả hai con đường đều có độ dài lý thuyết bằng hệt nhau là sáu bước đi từ xuất phát tới đích.",
             "Tuy nhiên, đường sát bẫy bên phải đi dọc cạnh hai ô bẫy ba hai và ba ba nên rất dễ bị trượt hai mươi phần trăm hất vào bẫy âm mười.",
-            "Trên một nghìn tập, chính sách tối ưu đạt kỳ vọng sáu phẩy bảy mươi tám, thắng tám mươi tám phẩy năm phần trăm và rơi bẫy mười một phẩy năm phần trăm.",
-            "Trong khi đó, đường sát bẫy chỉ đạt kỳ vọng hai phẩy không bảy, tỉ lệ thắng tụt xuống sáu mươi ba phẩy bốn phần trăm, còn tỉ lệ rơi bẫy tăng lên hai mươi tám phẩy ba phần trăm.",
+            "Trên một nghìn tập, chính sách tối ưu đạt kỳ vọng sáu phẩy bảy mươi tám, thắng tám mươi tám phẩy năm phần trăm, rơi bẫy mười một phẩy năm phần trăm và không có tập nào bị tham ao.",
+            "Trong khi đó, đường sát bẫy chỉ đạt kỳ vọng hai phẩy không bảy, tỉ lệ thắng tụt xuống sáu mươi ba phẩy bốn phần trăm, rơi bẫy tăng lên hai mươi tám phẩy ba phần trăm và tám phẩy ba phần trăm bị tham ao.",
             "Như vậy, toán học Em Đi Pi đã tự động cân bằng giữa chi phí bước đi và độ an toàn dài hạn. Cảm ơn thầy cô và các bạn đã theo dõi.",
         ],
         "display_text": (
-            "Cảnh cuối đối chiếu trực tiếp hai chiến lược có **cùng độ dài lý thuyết 6 bước**:\n"
-            "- **Bên trái — Chính sách tối ưu $\\pi^*$:** lên Cột 1, sang phải Hàng 4 → $V(\\text{Start}) = 6.78$, thành công **88.5%**, rơi bẫy **11.5%**.\n"
-            "- **Bên phải — Đường tắt sát bẫy:** sang phải Hàng 1, lên Cột 4 → $V(\\text{Start}) = 2.07$, thành công **63.4%**, rơi bẫy **28.3%**.\n\n"
+            "Cảnh cuối đối chiếu trực tiếp hai chiến lược có **cùng độ dài lý thuyết 6 bước** (giới hạn 50 bước/tập):\n"
+            "- **Bên trái — Chính sách tối ưu $\\pi^*$:** lên Cột 1, sang phải Hàng 4 → $V(\\text{Start}) = 6.78$, thành công **88.5%**, rơi bẫy **11.5%**, Timeout **0.0%**.\n"
+            "- **Bên phải — Đường tắt sát bẫy:** sang phải Hàng 1, lên Cột 4 → $V(\\text{Start}) = 2.07$, thành công **63.4%**, rơi bẫy **28.3%**, Timeout **8.3%**.\n\n"
             "**Kết luận:** Cùng 6 bước đi, nhưng đường sát bẫy rủi ro cao hơn nhiều. Toán học MDP đã tự cân bằng giữa chi phí từng bước (`-0.04`) và độ an toàn dài hạn trước rủi ro trượt 20%. Cảm ơn thầy cô và các bạn đã theo dõi!"
         ),
     },
@@ -184,9 +185,11 @@ def _assemble_segment(
     return np.concatenate(parts)
 
 
-def generate_all() -> None:
+def generate_all(only_keys: set[str] | None = None) -> None:
     audio_dir = ROOT_DIR / "web" / "audio"
     audio_dir.mkdir(parents=True, exist_ok=True)
+
+    target_segs = [seg for seg in SEGMENTS if only_keys is None or seg["key"] in only_keys]
 
     print("[1/4] Khởi tạo VieNeu-TTS-v3-Turbo (ONNX CPU)...")
     t_init = time.time()
@@ -197,11 +200,11 @@ def generate_all() -> None:
     t_start = time.time()
 
     try:
-        for seg_idx, seg in enumerate(SEGMENTS, start=1):
+        for seg_idx, seg in enumerate(target_segs, start=1):
             key = seg["key"]
             sent_list = seg["tts_sentences"]
             wavs: list[np.ndarray] = []
-            print(f"[2/4] Đang đọc phân đoạn {seg_idx}/{len(SEGMENTS)} ({key}, {len(sent_list)} câu)...")
+            print(f"[2/4] Đang đọc phân đoạn {seg_idx}/{len(target_segs)} ({key}, {len(sent_list)} câu)...")
             for s_idx, text in enumerate(sent_list, start=1):
                 wav = tts.infer(text)
                 wav = np.asarray(wav, dtype=np.float32).reshape(-1)
@@ -215,25 +218,25 @@ def generate_all() -> None:
 
     lead_sec = 0.40
     tail_sec = 0.50
-    pause_sec = 0.42
+    pause_sec = 0.85 if only_keys else 0.42
 
-    def compute_total(p_sec: float) -> float:
-        speech_sum = 0.0
-        for seg in SEGMENTS:
-            wavs = raw_sentences[seg["key"]]
-            dur = lead_sec + tail_sec + sum(len(w) / SAMPLE_RATE for w in wavs) + max(0, len(wavs) - 1) * p_sec
-            speech_sum += dur
-        return speech_sum + (len(SEGMENTS) - 1) * GAP_BETWEEN_SEGMENTS_SEC
+    if only_keys is None:
+        def compute_total(p_sec: float) -> float:
+            speech_sum = 0.0
+            for seg in SEGMENTS:
+                wavs = raw_sentences[seg["key"]]
+                dur = lead_sec + tail_sec + sum(len(w) / SAMPLE_RATE for w in wavs) + max(0, len(wavs) - 1) * p_sec
+                speech_sum += dur
+            return speech_sum + (len(SEGMENTS) - 1) * GAP_BETWEEN_SEGMENTS_SEC
 
-    total_est = compute_total(pause_sec)
-    if total_est < 292.0 or total_est > 312.0:
-        n_pauses = sum(max(0, len(raw_sentences[seg["key"]]) - 1) for seg in SEGMENTS)
-        speech_only = total_est - n_pauses * pause_sec
-        target = 300.0
-        pause_sec = max(0.25, min(0.85, (target - speech_only) / max(1, n_pauses)))
         total_est = compute_total(pause_sec)
+        if total_est < 292.0 or total_est > 312.0:
+            n_pauses = sum(max(0, len(raw_sentences[seg["key"]]) - 1) for seg in SEGMENTS)
+            speech_only = total_est - n_pauses * pause_sec
+            target = 300.0
+            pause_sec = max(0.25, min(0.85, (target - speech_only) / max(1, n_pauses)))
 
-    print(f"[3/4] Đóng gói audio (pause_sec={pause_sec:.2f}s, tổng dự kiến={total_est:.2f}s)...")
+    print(f"[3/4] Đóng gói audio (pause_sec={pause_sec:.2f}s)...")
 
     gap_samples = np.zeros(int(round(GAP_BETWEEN_SEGMENTS_SEC * SAMPLE_RATE)), dtype=np.float32)
     combined_parts: list[np.ndarray] = []
@@ -245,17 +248,27 @@ def generate_all() -> None:
         tmp_path = Path(tmpdir)
         for idx, seg in enumerate(SEGMENTS):
             key = seg["key"]
-            seg_wav = _assemble_segment(raw_sentences[key], lead_sec, pause_sec, tail_sec)
-            seg_dur = len(seg_wav) / SAMPLE_RATE
-
-            wav_file = tmp_path / f"{key}.wav"
             mp3_file = audio_dir / seg["filename"]
-            sf.write(str(wav_file), seg_wav, SAMPLE_RATE)
 
-            subprocess.run(
-                ["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav_file), "-codec:a", "libmp3lame", "-b:a", "192k", str(mp3_file)],
-                check=True,
-            )
+            if key in raw_sentences:
+                seg_wav = _assemble_segment(raw_sentences[key], lead_sec, pause_sec, tail_sec)
+                wav_file = tmp_path / f"{key}.wav"
+                sf.write(str(wav_file), seg_wav, SAMPLE_RATE)
+                subprocess.run(
+                    ["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav_file), "-codec:a", "libmp3lame", "-b:a", "192k", str(mp3_file)],
+                    check=True,
+                )
+            else:
+                # Giải mã file MP3 sẵn có về WAV 48kHz mono để ghép nối liền mạch
+                decoded_wav = tmp_path / f"{key}_decoded.wav"
+                subprocess.run(
+                    ["ffmpeg", "-y", "-loglevel", "error", "-i", str(mp3_file), "-ar", str(SAMPLE_RATE), "-ac", "1", str(decoded_wav)],
+                    check=True,
+                )
+                seg_wav, _ = sf.read(str(decoded_wav), dtype="float32")
+                seg_wav = np.asarray(seg_wav, dtype=np.float32).reshape(-1)
+
+            seg_dur = len(seg_wav) / SAMPLE_RATE
 
             meta_segments[key] = {
                 "src": f"audio/{seg['filename']}",
@@ -340,4 +353,7 @@ def generate_all() -> None:
 
 
 if __name__ == "__main__":
-    generate_all()
+    parser = argparse.ArgumentParser(description="Tạo giọng đọc thuyết trình ~5 phút.")
+    parser.add_argument("--only", nargs="+", help="Chỉ tổng hợp lại các phân đoạn chỉ định (vd: --only s2 s6)")
+    args = parser.parse_args()
+    generate_all(set(args.only) if args.only else None)

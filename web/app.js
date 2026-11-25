@@ -3,20 +3,20 @@
 
   const DATA = window.MDP_DATA;
   if (!DATA) {
-    document.body.innerHTML = "<p style='padding:40px;font-size:24px'>Không tìm thấy dữ liệu web/data.js. Hãy chạy <code>python export_web_data.py</code>.</p>";
+    document.body.innerHTML = "<p style='padding:40px;font-size:24px'>Không tìm thấy dữ liệu web/data.js. Hãy chạy <code>python scripts/export_web_data.py</code>.</p>";
     return;
   }
 
   const AUDIO_META = window.MDP_AUDIO || null;
   const GAP_MS = (AUDIO_META && AUDIO_META.gapMs) || 1200;
   const FALLBACK_DURS = {
-    s1a: 26000,
-    s1b: 24000,
-    s2: 45000,
-    s3: 55000,
-    s4: 48000,
-    s5: 48000,
-    s6: 54000,
+    s1a: 34460,
+    s1b: 22490,
+    s2: 40990,
+    s3: 48080,
+    s4: 39230,
+    s5: 44110,
+    s6: 56930,
   };
 
   function segDurationMs(key) {
@@ -38,6 +38,7 @@
     3: [1, 0],   // Phải
   };
   const HEADING_DEG = { 0: 0, 1: 180, 2: -90, 3: 90 };
+  const FOCUS_CLASSES = ["focus-blue", "focus-green", "focus-red", "focus-amber"];
 
   function stateToRC(s) {
     return [Math.floor(s / 4) + 1, (s % 4) + 1];
@@ -73,6 +74,14 @@
 
   function fmtPct(rate) {
     return (rate * 100).toFixed(1) + "%";
+  }
+
+  function setCue(activeIds, allIds) {
+    const activeSet = new Set(Array.isArray(activeIds) ? activeIds : (activeIds ? [activeIds] : []));
+    for (const id of allIds) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle("cue-active", activeSet.has(id));
+    }
   }
 
   // ===================== LỚP LƯỚI TÁI SỬ DỤNG =====================
@@ -275,9 +284,15 @@
       }
     }
 
-    setFocusCells(indices) {
+    setFocusCells(indices, tone = "blue") {
+      const cls = `focus-${tone}`;
+      const set = new Set(indices);
       for (let s = 0; s < 16; s++) {
-        this.cells[s].el.classList.toggle("focus-ring", indices.includes(s));
+        const el = this.cells[s].el;
+        el.classList.remove(...FOCUS_CLASSES);
+        if (set.has(s)) {
+          el.classList.add(cls);
+        }
       }
     }
 
@@ -336,7 +351,10 @@
 
     drawPath(states, { color = "#16A34A", dashed = false, width = 6, opacity = 0.9, layerId = "default", halo = false } = {}) {
       this.pathLayer.querySelectorAll(`[data-layer-id="${layerId}"]`).forEach((n) => n.remove());
-      if (!states || states.length < 2) return;
+      if (!states || states.length < 2) {
+        this.cellsGrid.classList.toggle("has-path", this.pathLayer.children.length > 0);
+        return;
+      }
 
       const pts = states.map((s) => {
         const { x, y } = this.cellCenter(s);
@@ -374,14 +392,17 @@
         poly.setAttribute("stroke-dasharray", "12 10");
       }
       this.pathLayer.appendChild(poly);
+      this.cellsGrid.classList.add("has-path");
     }
 
     clearPaths() {
       this.pathLayer.innerHTML = "";
+      this.cellsGrid.classList.remove("has-path");
     }
 
     moveRobot(s, heading = 0, instant = false) {
       const { x, y } = this.cellCenter(s);
+      this.cellsGrid.classList.toggle("robot-at-start", s === 0);
       if (instant) {
         this.robot.style.transition = "none";
       } else {
@@ -399,6 +420,7 @@
 
     hideRobot() {
       this.robot.style.display = "none";
+      this.cellsGrid.classList.remove("robot-at-start");
     }
 
     flashCell(s, kind) {
@@ -410,13 +432,31 @@
 
     clearFlashes() {
       for (const c of this.cells) {
-        c.el.classList.remove("flash-trap", "flash-goal", "changed", "focus-ring");
+        c.el.classList.remove("flash-trap", "flash-goal", "changed", ...FOCUS_CLASSES);
       }
     }
 
-    showSlipDemo(show) {
+    showActionCross(show) {
       this.slipLayer.innerHTML = "";
       if (!show) return;
+      // Ô trống (2,2) -> s = (2-1)*4 + (2-1) = 5
+      const { x, y } = this.cellCenter(5);
+      const col = "#2563EB";
+      this._drawSvgArrow(this.slipLayer, x, y - 10, x, y - 56, col, 4, 11);
+      this._drawSvgArrow(this.slipLayer, x, y + 10, x, y + 56, col, 4, 11);
+      this._drawSvgArrow(this.slipLayer, x - 10, y, x - 56, y, col, 4, 11);
+      this._drawSvgArrow(this.slipLayer, x + 10, y, x + 56, y, col, 4, 11);
+      const lbl = svgEl("text", {
+        x, y: y + 4, "text-anchor": "middle",
+        fill: "#1E40AF", "font-size": 16, "font-weight": 800,
+      });
+      lbl.textContent = "A";
+      this.slipLayer.appendChild(lbl);
+    }
+
+    showSlipDemo(mode) {
+      this.slipLayer.innerHTML = "";
+      if (!mode || mode === "none") return;
       const { x, y } = this.cellCenter(0);
 
       this._drawSvgArrow(this.slipLayer, x, y - 28, x, y - 125, "#16A34A", 7, 16);
@@ -427,27 +467,29 @@
       tMain.textContent = "80% thẳng";
       this.slipLayer.appendChild(tMain);
 
-      this._drawSvgArrow(this.slipLayer, x + 28, y, x + 115, y, "#F59E0B", 4, 12);
-      const tRight = svgEl("text", {
-        x: x + 56, y: y - 14,
-        fill: "#B45309", "font-size": 20, "font-weight": 700,
-      });
-      tRight.textContent = "10% trượt";
-      this.slipLayer.appendChild(tRight);
+      if (mode === "all") {
+        this._drawSvgArrow(this.slipLayer, x + 28, y, x + 115, y, "#F59E0B", 4, 12);
+        const tRight = svgEl("text", {
+          x: x + 56, y: y - 14,
+          fill: "#B45309", "font-size": 20, "font-weight": 700,
+        });
+        tRight.textContent = "10% trượt";
+        this.slipLayer.appendChild(tRight);
 
-      this._drawSvgArrow(this.slipLayer, x - 26, y, x - 72, y, "#F59E0B", 4, 11);
-      const tLeft = svgEl("text", {
-        x: x - 74, y: y - 14,
-        fill: "#B45309", "font-size": 19, "font-weight": 700,
-      });
-      tLeft.textContent = "10%";
-      this.slipLayer.appendChild(tLeft);
+        this._drawSvgArrow(this.slipLayer, x - 26, y, x - 72, y, "#F59E0B", 4, 11);
+        const tLeft = svgEl("text", {
+          x: x - 74, y: y - 14,
+          fill: "#B45309", "font-size": 19, "font-weight": 700,
+        });
+        tLeft.textContent = "10%";
+        this.slipLayer.appendChild(tLeft);
+      }
     }
 
     clear() {
       this.clearPaths();
       this.arrowLayer.innerHTML = "";
-      this.cellsGrid.classList.remove("has-arrows");
+      this.cellsGrid.classList.remove("has-arrows", "robot-at-start", "has-path");
       this.slipLayer.innerHTML = "";
       this.clearFlashes();
       this.setCellValues(null, false);
@@ -579,27 +621,108 @@
     };
   }
 
-  // ===================== 6 CẢNH DEMO =====================
-  function createScenes(stageBody, scheduler, onSceneDone, goToScene) {
-    // 1. Môi trường MDP (Beat 0 = s1a, Beat 1 = s1b)
+  // ===================== 6 CẢNH DEMO ĐỒNG BỘ GIỌNG ĐỌC =====================
+  function createScenes(stageBody, scheduler, onSceneDone, goToScene, isAutoPlay) {
+    // 1. Môi trường MDP (Beat 0 = s1a 34.5s, Beat 1 = s1b 22.5s)
     function scene1() {
       let grid = null;
       let beat = 0;
       let noteEl = null;
+      const S1_BULLETS = ["s1-b1", "s1-b2", "s1-b3", "s1-b4"];
 
-      function scheduleBeat1Highlights() {
-        grid.setFocusCells([0]); // START (1,1)
-        scheduler.after(5500, () => {
+      function scheduleBeat1Synced() {
+        if (!isAutoPlay()) return;
+        noteEl.textContent = "Giới thiệu mô hình MDP trên lưới 4×4.";
+
+        // 6.7s: Câu 2 — S (16 ô từ (1,1) đến (4,4)) & A (4 hành động)
+        scheduler.after(6700, () => {
           if (beat !== 0) return;
-          grid.setFocusCells([15]); // ĐÍCH (4,4)
+          setCue("s1-b1", S1_BULLETS);
+          grid.setFocusCells([0], "blue");
         });
-        scheduler.after(11500, () => {
+        scheduler.after(10800, () => {
           if (beat !== 0) return;
-          grid.setFocusCells([10, 6]); // BẪY (3,3) & (3,2)
+          grid.setFocusCells([15], "green");
         });
-        scheduler.after(18000, () => {
+        scheduler.after(12600, () => {
+          if (beat !== 0) return;
+          setCue("s1-b2", S1_BULLETS);
+          grid.setFocusCells([]);
+          grid.showActionCross(true);
+        });
+
+        // 15.8s: Câu 3 — Phần thưởng R: Đích (4,4) +10 & Bẫy (3,3),(3,2) -10
+        scheduler.after(15800, () => {
+          if (beat !== 0) return;
+          grid.showActionCross(false);
+          setCue("s1-b3", S1_BULLETS);
+          grid.setFocusCells([15], "green");
+          noteEl.className = "highlight-box green";
+          noteEl.textContent = "Ô Đích (4,4) mang lại phần thưởng +10.";
+        });
+        scheduler.after(18300, () => {
+          if (beat !== 0) return;
+          grid.setFocusCells([10, 6], "red");
+          noteEl.className = "highlight-box red";
+          noteEl.textContent = "Hai ô Bẫy (3,3) và (3,2) phạt −10 và kết thúc lượt đi.";
+        });
+
+        // 23.1s: Câu 4 — Chi phí bước −0.04, va tường −0.2
+        scheduler.after(23100, () => {
+          if (beat !== 0) return;
+          grid.setFocusCells([4, 0], "amber");
+          noteEl.className = "highlight-box amber";
+          noteEl.textContent = "Mỗi bước đi: −0.04 · Va tường biên: đứng yên & −0.2.";
+        });
+
+        // 29.7s: Câu 5 — γ = 0.99
+        scheduler.after(29700, () => {
           if (beat !== 0) return;
           grid.setFocusCells([]);
+          setCue("s1-b4", S1_BULLETS);
+          noteEl.className = "highlight-box";
+          noteEl.textContent = "Hệ số chiết khấu γ = 0.99: ưu tiên phần thưởng dài hạn.";
+        });
+      }
+
+      function scheduleBeat2Synced() {
+        setCue([], S1_BULLETS);
+        if (!isAutoPlay()) {
+          grid.setFocusCells([0], "blue");
+          grid.showSlipDemo("all");
+          noteEl.className = "highlight-box amber";
+          noteEl.textContent = "Động lực P(s'|s,a): 80% đi đúng hướng, 10% trượt trái, 10% trượt phải.";
+          return;
+        }
+
+        // 0.0s: Câu 1 — giới thiệu yếu tố ngẫu nhiên
+        grid.setFocusCells([0], "blue");
+        grid.showSlipDemo("none");
+        noteEl.className = "highlight-box";
+        noteEl.textContent = "Động lực chuyển trạng thái ngẫu nhiên P(s'|s,a)...";
+
+        // 6.0s: Câu 2 — 80% đi đúng hướng
+        scheduler.after(6000, () => {
+          if (beat !== 1) return;
+          grid.showSlipDemo("main");
+          noteEl.className = "highlight-box green";
+          noteEl.textContent = "80% xác suất robot đi đúng hướng đã chọn.";
+        });
+
+        // 12.0s: Câu 3 — 10% trượt trái, 10% trượt phải
+        scheduler.after(12000, () => {
+          if (beat !== 1) return;
+          grid.showSlipDemo("all");
+          noteEl.className = "highlight-box amber";
+          noteEl.textContent = "20% còn lại: 10% trượt vuông góc sang trái, 10% trượt sang phải.";
+        });
+
+        // 17.8s: Câu 4 — cảnh báo đi sát mép bẫy
+        scheduler.after(17800, () => {
+          if (beat !== 1) return;
+          grid.setFocusCells([10, 6], "red");
+          noteEl.className = "highlight-box red";
+          noteEl.textContent = "Độ trượt 20% khiến việc đi sát mép bẫy cực kỳ nguy hiểm.";
         });
       }
 
@@ -614,10 +737,10 @@
                   <h2 class="scene-heading">1. Mô hình hóa MDP trên GridWorld 4x4</h2>
                   <p class="scene-subtitle">Bài toán tìm đường trong môi trường có yếu tố ngẫu nhiên.</p>
                   <ul class="bullet-list">
-                    <li class="bullet-item"><span class="bullet-dot"></span><span><strong>S (Trạng thái):</strong> 16 ô lưới từ (1,1) đến (4,4).</span></li>
-                    <li class="bullet-item"><span class="bullet-dot"></span><span><strong>A (Hành động):</strong> { Lên, Xuống, Trái, Phải }.</span></li>
-                    <li class="bullet-item"><span class="bullet-dot"></span><span><strong>R (Phần thưởng):</strong> Đích +10, Bẫy −10, mỗi bước −0.04 (va tường −0.2).</span></li>
-                    <li class="bullet-item"><span class="bullet-dot"></span><span><strong>γ = 0.99:</strong> Ưu tiên phần thưởng dài hạn.</span></li>
+                    <li id="s1-b1" class="bullet-item"><span class="bullet-dot"></span><span><strong>S (Trạng thái):</strong> 16 ô lưới từ (1,1) đến (4,4).</span></li>
+                    <li id="s1-b2" class="bullet-item"><span class="bullet-dot"></span><span><strong>A (Hành động):</strong> { Lên, Xuống, Trái, Phải }.</span></li>
+                    <li id="s1-b3" class="bullet-item"><span class="bullet-dot"></span><span><strong>R (Phần thưởng):</strong> Đích +10, Bẫy −10, mỗi bước −0.04 (va tường −0.2).</span></li>
+                    <li id="s1-b4" class="bullet-item"><span class="bullet-dot"></span><span><strong>γ = 0.99:</strong> Ưu tiên phần thưởng dài hạn.</span></li>
                   </ul>
                   <div id="s1-note" class="highlight-box">Nhấn Space để xem động lực ngẫu nhiên 80 / 10 / 10.</div>
                 </div>
@@ -627,16 +750,15 @@
           grid = new GridView(document.getElementById("s1-grid"), { size: 640 });
           grid.moveRobot(0, 0, true);
           noteEl = document.getElementById("s1-note");
-          scheduleBeat1Highlights();
+          scheduleBeat1Synced();
         },
         step() {
           if (beat === 0) {
             beat = 1;
             scheduler.clearAll();
+            grid.showActionCross(false);
             grid.setFocusCells([]);
-            grid.showSlipDemo(true);
-            noteEl.className = "highlight-box amber";
-            noteEl.textContent = "Động lực P(s'|s,a): 80% đi đúng hướng, 10% trượt trái, 10% trượt phải.";
+            scheduleBeat2Synced();
           } else {
             onSceneDone();
           }
@@ -649,7 +771,7 @@
       };
     }
 
-    // 2. Agent ngẫu nhiên (25 tập, nhịp chậm rãi)
+    // 2. Agent ngẫu nhiên (s2: 40.51s)
     function scene2() {
       let grid = null;
       let epIdx = 0;
@@ -658,6 +780,7 @@
       let goalTally = 0;
       let bannerEl = null;
       let epStatusEl = null;
+      const S2_METRICS = ["s2-m-goal", "s2-m-trap", "s2-m-timeout"];
 
       function runNextStep() {
         const eps = DATA.episodes.random;
@@ -697,7 +820,7 @@
             epStatusEl.textContent = `Tới đích (+${ep.total_reward.toFixed(2)})`;
           } else {
             epStatusEl.className = "status-pill timeout";
-            epStatusEl.textContent = "Hết giờ";
+            epStatusEl.textContent = "Timeout";
           }
           bannerEl.textContent = `Tập ${epIdx + 1}/${eps.length} · Bẫy: ${trapTally} | Đích: ${goalTally}`;
           epIdx++;
@@ -723,18 +846,22 @@
                 </div>
                 <div class="card">
                   <h2 class="scene-heading">2. Khi tác tử hành động ngẫu nhiên</h2>
-                  <p class="scene-subtitle">Không có chính sách dẫn đường, robot liên tục trượt vào ô bẫy −10.</p>
-                  <div class="metrics-row">
-                    <div class="metric-box">
-                      <div class="metric-label">Tỉ lệ tới đích (1000 tập)</div>
+                  <p class="scene-subtitle">Thống kê 1.000 tập (tối đa 50 bước/tập): robot thường xuyên trượt vào ô bẫy −10.</p>
+                  <div class="metrics-row three">
+                    <div id="s2-m-goal" class="metric-box">
+                      <div class="metric-label">Tới đích</div>
                       <div class="metric-value green">${fmtPct(st.success_rate)}</div>
                     </div>
-                    <div class="metric-box">
-                      <div class="metric-label">Tỉ lệ rơi bẫy (1000 tập)</div>
+                    <div id="s2-m-trap" class="metric-box">
+                      <div class="metric-label">Rơi bẫy</div>
                       <div class="metric-value red">${fmtPct(st.trap_rate)}</div>
                     </div>
+                    <div id="s2-m-timeout" class="metric-box">
+                      <div class="metric-label">Timeout</div>
+                      <div class="metric-value muted">${fmtPct(st.timeout_rate)}</div>
+                    </div>
                   </div>
-                  <div class="highlight-box red">Điểm trung bình: ${st.avg_reward.toFixed(2)} — cần thuật toán tìm chính sách tối ưu.</div>
+                  <div class="highlight-box red">Tổng 3 kết cục = 100.0% · Điểm trung bình: ${st.avg_reward.toFixed(2)} — cần thuật toán tối ưu.</div>
                 </div>
               </div>
             </div>
@@ -743,6 +870,13 @@
           bannerEl = document.getElementById("s2-ep-label");
           epStatusEl = document.getElementById("s2-ep-status");
           scheduler.after(450, runNextStep);
+
+          if (isAutoPlay()) {
+            scheduler.after(20400, () => setCue("s2-m-goal", S2_METRICS));
+            scheduler.after(27200, () => setCue("s2-m-trap", S2_METRICS));
+            scheduler.after(29800, () => setCue("s2-m-timeout", S2_METRICS));
+            scheduler.after(35800, () => setCue([], S2_METRICS));
+          }
         },
         step() {
           onSceneDone();
@@ -754,15 +888,14 @@
       };
     }
 
-    // 3. Value Iteration (48 vòng trải đều theo thời lượng thuyết minh)
+    // 3. Value Iteration (s3: 48.08s)
     function scene3() {
       let grid = null;
       let k = 0;
       let updateChart = null;
       let iterTextEl = null;
       let convBoxEl = null;
-      const maxIter = DATA.vi.iterations;
-      const iterDelay = Math.max(650, Math.floor((segDurationMs("s3") - 9000) / maxIter));
+      const maxIter = DATA.vi.iterations; // 48
 
       function renderIter(idx) {
         k = Math.max(0, Math.min(maxIter, idx));
@@ -770,7 +903,10 @@
         iterTextEl.textContent = `Vòng lặp ${k} / ${maxIter}`;
         if (updateChart) updateChart(k);
 
-        if (k >= maxIter) {
+        if (k === 0) {
+          convBoxEl.className = "highlight-box";
+          convBoxEl.textContent = "Khởi tạo V₀(s) = 0 trên tất cả 16 trạng thái trước khi lặp Bellman.";
+        } else if (k >= maxIter) {
           convBoxEl.className = "highlight-box green";
           convBoxEl.textContent = `Hội tụ sau ${maxIter} vòng (max |ΔV| < 10⁻⁴). V*(1,1) = ${DATA.vi.V_star[0].toFixed(2)}.`;
         } else {
@@ -779,11 +915,12 @@
         }
       }
 
+      const stepMs = 710; // 48 * 710ms = 34.08s -> bắt đầu ở 6.8s, hội tụ đúng 40.9s
       function tick() {
         if (k < maxIter) {
           renderIter(k + 1);
           if (k < maxIter) {
-            scheduler.after(iterDelay, tick);
+            scheduler.after(stepMs, tick);
           }
         }
       }
@@ -818,11 +955,24 @@
           convBoxEl = document.getElementById("s3-conv");
           updateChart = buildConvergenceChart(document.getElementById("s3-chart"), DATA.vi.deltas, DATA.params.theta);
           renderIter(0);
-          scheduler.after(700, tick);
+
+          if (isAutoPlay()) {
+            scheduler.after(6800, tick);
+            // 22.2s: Câu 4 — ô lân cận đích (3,4) [s=14] & (4,3) [s=11]
+            scheduler.after(22200, () => grid.setFocusCells([14, 11], "green"));
+            // 26.6s: Câu 5 — ô sát bẫy hàng 1: (3,1) [s=2] & (4,1) [s=3]
+            scheduler.after(26600, () => grid.setFocusCells([2, 3], "red"));
+            scheduler.after(34000, () => grid.setFocusCells([]));
+            // 43.0s: Câu 7 — V*(1,1) = 6.78
+            scheduler.after(43000, () => grid.setFocusCells([0], "blue"));
+          } else {
+            scheduler.after(1200, tick);
+          }
         },
         step() {
           if (k < maxIter) {
             scheduler.clearAll();
+            grid.setFocusCells([]);
             renderIter(k + 1);
           } else {
             onSceneDone();
@@ -835,7 +985,7 @@
       };
     }
 
-    // 4. Policy Iteration (mỗi pha dừng đủ lâu để quan sát mũi tên đổi hướng)
+    // 4. Policy Iteration (s4: 39.23s)
     function scene4() {
       let grid = null;
       let stepIdx = 0;
@@ -844,7 +994,7 @@
       let noteEl = null;
       const steps = DATA.pi.steps;
       const totalRounds = DATA.pi.iterations;
-      const phaseDelay = Math.max(5500, Math.floor((segDurationMs("s4") - 6000) / Math.max(1, steps.length - 1)));
+      const S4_BULLETS = ["s4-b1", "s4-b2", "s4-b3"];
 
       function renderStep(idx) {
         stepIdx = Math.max(0, Math.min(steps.length - 1, idx));
@@ -881,11 +1031,11 @@
         }
       }
 
-      function autoTick() {
+      function autoTickManual() {
         if (stepIdx < steps.length - 1) {
           renderStep(stepIdx + 1);
           if (stepIdx < steps.length - 1) {
-            scheduler.after(phaseDelay, autoTick);
+            scheduler.after(5500, autoTickManual);
           }
         }
       }
@@ -905,9 +1055,9 @@
                   <h2 class="scene-heading">4. Thuật toán Policy Iteration</h2>
                   <p class="scene-subtitle">Luân phiên Đánh giá chính sách V^π và Cải tiến tham lam π.</p>
                   <ul class="bullet-list">
-                    <li class="bullet-item"><span class="bullet-dot"></span><span><strong>Pha 1:</strong> Tính giá trị kỳ vọng V^π nếu giữ nguyên hướng đi.</span></li>
-                    <li class="bullet-item"><span class="bullet-dot"></span><span><strong>Pha 2:</strong> Lật mũi tên (tô vàng) sang hành động tốt hơn.</span></li>
-                    <li class="bullet-item"><span class="bullet-dot"></span><span>Dừng ngay khi chính sách không còn thay đổi.</span></li>
+                    <li id="s4-b1" class="bullet-item"><span class="bullet-dot"></span><span><strong>Pha 1:</strong> Tính giá trị kỳ vọng V^π nếu giữ nguyên hướng đi.</span></li>
+                    <li id="s4-b2" class="bullet-item"><span class="bullet-dot"></span><span><strong>Pha 2:</strong> Lật mũi tên (tô vàng) sang hành động tốt hơn.</span></li>
+                    <li id="s4-b3" class="bullet-item"><span class="bullet-dot"></span><span>Dừng ngay khi chính sách không còn thay đổi.</span></li>
                   </ul>
                   <div id="s4-note" class="highlight-box"></div>
                 </div>
@@ -919,11 +1069,31 @@
           roundEl = document.getElementById("s4-round");
           noteEl = document.getElementById("s4-note");
           renderStep(0);
-          scheduler.after(phaseDelay, autoTick);
+
+          if (isAutoPlay()) {
+            // 7.1s: Câu 2 — Pha 1 Đánh giá V^π
+            scheduler.after(7100, () => setCue("s4-b1", S4_BULLETS));
+            // 15.3s: Câu 3 & 4 — Pha 2 Cải tiến π (tô vàng các ô đổi hướng)
+            scheduler.after(15300, () => {
+              renderStep(1);
+              setCue("s4-b2", S4_BULLETS);
+            });
+            // 25.6s..29.8s: Câu 5 — qua Vòng 2 và ổn định ở Vòng 3
+            scheduler.after(25600, () => renderStep(2));
+            scheduler.after(27000, () => renderStep(3));
+            scheduler.after(28400, () => renderStep(4));
+            scheduler.after(29800, () => {
+              renderStep(5);
+              setCue("s4-b3", S4_BULLETS);
+            });
+          } else {
+            scheduler.after(5500, autoTickManual);
+          }
         },
         step() {
           if (stepIdx < steps.length - 1) {
             scheduler.clearAll();
+            setCue([], S4_BULLETS);
             renderStep(stepIdx + 1);
           } else {
             onSceneDone();
@@ -936,24 +1106,28 @@
       };
     }
 
-    // 5. Chính sách tối ưu pi* (25 tập, nhịp 620ms/bước)
+    // 5. Chính sách tối ưu pi* (s5: 44.11s)
     function scene5() {
       let grid = null;
-      let epIdx = 0;
+      let orderPos = 0;
       let stepIdx = 0;
       let epLabelEl = null;
       let epStatusEl = null;
+      const S5_METRICS = ["s5-m-goal", "s5-m-trap"];
+      // Thứ tự phát tuyển chọn khớp lời thoại:
+      // opt[7] đi thẳng Cột 1 -> Hàng 4; opt[10] trượt qua (2,1) rồi rẽ trái về (1,1);
+      // opt[11] tới đích; opt[13] trượt tại (3,4) rơi xuống bẫy (3,3) đúng lúc đọc 11.5%.
+      const OPT_ORDER = [7, 10, 11, 13, 14, 2, 3, 4, 8, 9, 12, 15, 17, 20, 21, 22, 0, 1, 5, 6, 16, 18, 19, 23, 24];
 
       function runNextStep() {
         const eps = DATA.episodes.optimal;
-        if (epIdx >= eps.length) epIdx = 0;
-        const ep = eps[epIdx];
+        if (orderPos >= OPT_ORDER.length) orderPos = 0;
+        const ep = eps[OPT_ORDER[orderPos]];
 
         if (stepIdx === 0) {
-          grid.clearFlashes();
           grid.clearPaths();
           grid.moveRobot(ep.states[0], 0, true);
-          epLabelEl.textContent = `Tập ${epIdx + 1}/${eps.length} theo π*`;
+          epLabelEl.textContent = `Tập ${orderPos + 1}/${eps.length} theo π*`;
           epStatusEl.className = "status-pill running";
           epStatusEl.textContent = "Đang di chuyển...";
         }
@@ -964,7 +1138,7 @@
           grid.drawPath(ep.states.slice(0, stepIdx + 2), { color: "#16A34A", width: 7, opacity: 0.95, halo: true });
           grid.moveRobot(nextState, heading, false);
           stepIdx++;
-          scheduler.after(620, runNextStep);
+          scheduler.after(820, runNextStep);
         } else {
           const lastState = ep.states[ep.states.length - 1];
           grid.flashCell(lastState, ep.outcome === "goal" ? "goal" : "trap");
@@ -972,15 +1146,18 @@
           epStatusEl.textContent = ep.outcome === "goal"
             ? `Tới đích (+${ep.total_reward.toFixed(2)})`
             : `Trượt bẫy (${ep.total_reward.toFixed(2)})`;
-          epIdx++;
+          orderPos++;
           stepIdx = 0;
-          scheduler.after(1900, runNextStep);
+          scheduler.after(1500, () => {
+            for (const c of grid.cells) c.el.classList.remove("flash-trap", "flash-goal");
+            runNextStep();
+          });
         }
       }
 
       return {
         enter() {
-          epIdx = 0;
+          orderPos = 0;
           stepIdx = 0;
           const st = DATA.stats.optimal;
           stageBody.innerHTML = `
@@ -999,11 +1176,11 @@
                       <div class="metric-label">V*(1,1)</div>
                       <div class="metric-value blue">${DATA.vi.V_star[0].toFixed(2)}</div>
                     </div>
-                    <div class="metric-box">
+                    <div id="s5-m-goal" class="metric-box">
                       <div class="metric-label">Thành công</div>
                       <div class="metric-value green">${fmtPct(st.success_rate)}</div>
                     </div>
-                    <div class="metric-box">
+                    <div id="s5-m-trap" class="metric-box">
                       <div class="metric-label">Rơi bẫy</div>
                       <div class="metric-value red">${fmtPct(st.trap_rate)}</div>
                     </div>
@@ -1017,7 +1194,33 @@
           grid.setPolicy(DATA.vi.pi_star, { color: "#15803D", opacity: 0.72 });
           epLabelEl = document.getElementById("s5-ep-label");
           epStatusEl = document.getElementById("s5-ep-status");
-          scheduler.after(550, runNextStep);
+
+          if (isAutoPlay()) {
+            // 0.0s - 7.4s: Câu 1 giới thiệu π*, robot đứng sẵn ở START
+            grid.moveRobot(0, 0, true);
+            epStatusEl.textContent = "Sẵn sàng theo π*";
+            scheduler.after(7400, runNextStep);
+
+            // 15.1s: Câu 3 — nhấn ô (2,1) [s=1] chỉ mũi tên sang trái
+            scheduler.after(15100, () => grid.setFocusCells([1], "amber"));
+            // 22.5s: Câu 4 — Thành công 88.5%
+            scheduler.after(22500, () => {
+              grid.setFocusCells([]);
+              setCue("s5-m-goal", S5_METRICS);
+            });
+            // 29.2s: Câu 5 — Rơi bẫy 11.5% tại (3,4) [s=14] -> (3,3) [s=10]
+            scheduler.after(29200, () => {
+              setCue("s5-m-trap", S5_METRICS);
+              grid.setFocusCells([14, 10], "red");
+            });
+            // 37.5s: Câu 6 — kết luận tổng quát
+            scheduler.after(37500, () => {
+              setCue([], S5_METRICS);
+              grid.setFocusCells([]);
+            });
+          } else {
+            scheduler.after(550, runNextStep);
+          }
         },
         step() {
           onSceneDone();
@@ -1029,30 +1232,39 @@
       };
     }
 
-    // 6. So sánh π* vs đường tắt sát bẫy (25 lượt đua song song, nhịp 640ms/bước)
+    // 6. So sánh π* vs đường tắt sát bẫy (s6: 54.85s)
     function scene6() {
       let gOpt = null;
       let gRisky = null;
-      let epIdx = 1;
-      let racesDone = 0;
+      let pairPos = 0;
       let stepIdx = 0;
       let statusOptEl = null;
       let statusRiskyEl = null;
 
       const OPT_THEORY = [0, 4, 8, 12, 13, 14, 15];
       const RISKY_THEORY = [0, 1, 2, 3, 7, 11, 15];
+      const RACE_PAIRS = [[7, 5], [11, 1], [14, 2], [4, 3], [21, 6], [15, 7], [8, 10], [9, 16]];
+      const S6_CUES = ["s6-card-opt", "s6-card-risky", "s6-stats-opt", "s6-stats-risky", "s6-conclusion"];
+
+      function animateTheoreticalPath(grid, states, color, dashed, stepDelay) {
+        for (let len = 2; len <= states.length; len++) {
+          scheduler.after((len - 2) * stepDelay, () => {
+            grid.drawPath(states.slice(0, len), { color, dashed, width: 6, opacity: 0.85, layerId: "theory", halo: true });
+          });
+        }
+      }
 
       function runRaceStep() {
         const epsOpt = DATA.episodes.optimal;
         const epsRisky = DATA.episodes.risky;
-        const idx = epIdx % epsOpt.length;
+        const [optIdx, riskyIdx] = RACE_PAIRS[pairPos % RACE_PAIRS.length];
 
-        const epO = epsOpt[idx];
-        const epR = epsRisky[idx];
+        const epO = epsOpt[optIdx];
+        const epR = epsRisky[riskyIdx];
 
         if (stepIdx === 0) {
-          gOpt.clearFlashes();
-          gRisky.clearFlashes();
+          for (const c of gOpt.cells) c.el.classList.remove("flash-trap", "flash-goal");
+          for (const c of gRisky.cells) c.el.classList.remove("flash-trap", "flash-goal");
           gOpt.drawPath(OPT_THEORY, { color: "#16A34A", width: 5, opacity: 0.35, layerId: "theory" });
           gRisky.drawPath(RISKY_THEORY, { color: "#DC2626", dashed: true, width: 5, opacity: 0.4, layerId: "theory" });
           gOpt.drawPath([], { layerId: "live" });
@@ -1060,9 +1272,9 @@
           gOpt.moveRobot(epO.states[0], 0, true);
           gRisky.moveRobot(epR.states[0], 3, true);
           statusOptEl.className = "status-pill running";
-          statusOptEl.textContent = `Lượt ${racesDone + 1}: Đang chạy`;
+          statusOptEl.textContent = `Lượt ${pairPos + 1}: Đang chạy`;
           statusRiskyEl.className = "status-pill running";
-          statusRiskyEl.textContent = `Lượt ${racesDone + 1}: Đang chạy`;
+          statusRiskyEl.textContent = `Lượt ${pairPos + 1}: Đang chạy`;
         }
 
         const optDone = stepIdx >= epO.actions.length;
@@ -1090,25 +1302,23 @@
               ? `Đích (+${epR.total_reward.toFixed(1)})`
               : epR.outcome === "trap"
                 ? `Rơi bẫy (${epR.total_reward.toFixed(1)})`
-                : "Hết giờ";
+                : "Timeout";
           }
         }
 
         if (!optDone || !riskyDone) {
           stepIdx++;
-          scheduler.after(640, runRaceStep);
+          scheduler.after(620, runRaceStep);
         } else {
-          epIdx++;
-          racesDone++;
+          pairPos++;
           stepIdx = 0;
-          scheduler.after(2200, runRaceStep);
+          scheduler.after(1800, runRaceStep);
         }
       }
 
       return {
         enter() {
-          epIdx = 1;
-          racesDone = 0;
+          pairPos = 0;
           stepIdx = 0;
           const stOpt = DATA.stats.optimal;
           const stRisky = DATA.stats.risky;
@@ -1116,13 +1326,13 @@
           stageBody.innerHTML = `
             <div class="compare-layout">
               <div class="compare-pair">
-                <div class="compare-card">
+                <div id="s6-card-opt" class="compare-card">
                   <div class="compare-card-header">
                     <span class="compare-card-title opt">Chính sách tối ưu π* (Đi vòng an toàn)</span>
                     <span id="s6-st-opt" class="status-pill running">Đang chạy</span>
                   </div>
                   <div id="s6-grid-opt"></div>
-                  <div class="compare-stats">
+                  <div id="s6-stats-opt" class="compare-stats">
                     <div class="compare-stat-item">
                       <div class="compare-stat-label">V(Start)</div>
                       <div class="compare-stat-val" style="color:var(--start)">${DATA.vi.V_star[0].toFixed(2)}</div>
@@ -1135,16 +1345,20 @@
                       <div class="compare-stat-label">Rơi bẫy</div>
                       <div class="compare-stat-val" style="color:var(--risky)">${fmtPct(stOpt.trap_rate)}</div>
                     </div>
+                    <div class="compare-stat-item">
+                      <div class="compare-stat-label">Timeout</div>
+                      <div class="compare-stat-val" style="color:var(--muted)">${fmtPct(stOpt.timeout_rate)}</div>
+                    </div>
                   </div>
                 </div>
 
-                <div class="compare-card">
+                <div id="s6-card-risky" class="compare-card">
                   <div class="compare-card-header">
                     <span class="compare-card-title risky">Đường tắt sát bẫy (Mạo hiểm)</span>
                     <span id="s6-st-risky" class="status-pill running">Đang chạy</span>
                   </div>
                   <div id="s6-grid-risky"></div>
-                  <div class="compare-stats">
+                  <div id="s6-stats-risky" class="compare-stats">
                     <div class="compare-stat-item">
                       <div class="compare-stat-label">V(Start)</div>
                       <div class="compare-stat-val" style="color:var(--start)">${DATA.risky.V[0].toFixed(2)}</div>
@@ -1157,11 +1371,15 @@
                       <div class="compare-stat-label">Rơi bẫy</div>
                       <div class="compare-stat-val" style="color:var(--risky)">${fmtPct(stRisky.trap_rate)}</div>
                     </div>
+                    <div class="compare-stat-item">
+                      <div class="compare-stat-label">Timeout</div>
+                      <div class="compare-stat-val" style="color:var(--muted)">${fmtPct(stRisky.timeout_rate)}</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div class="conclusion-banner">
+              <div id="s6-conclusion" class="conclusion-banner">
                 Cùng 6 bước — nhưng đường sát bẫy rủi ro cao hơn. Bellman tự cân bằng chi phí và an toàn.
               </div>
             </div>
@@ -1174,7 +1392,42 @@
           statusOptEl = document.getElementById("s6-st-opt");
           statusRiskyEl = document.getElementById("s6-st-risky");
 
-          scheduler.after(600, runRaceStep);
+          if (isAutoPlay()) {
+            gOpt.moveRobot(0, 0, true);
+            gRisky.moveRobot(0, 3, true);
+            statusOptEl.textContent = "Sẵn sàng";
+            statusRiskyEl.textContent = "Sẵn sàng";
+
+            // 4.9s: Câu 2 — vẽ dần đường vòng π* bên trái
+            scheduler.after(4900, () => {
+              setCue("s6-card-opt", S6_CUES);
+              animateTheoreticalPath(gOpt, OPT_THEORY, "#16A34A", false, 550);
+            });
+            // 10.3s: Câu 3 — vẽ dần đường tắt sát bẫy bên phải
+            scheduler.after(10300, () => {
+              setCue("s6-card-risky", S6_CUES);
+              animateTheoreticalPath(gRisky, RISKY_THEORY, "#DC2626", true, 550);
+            });
+            // 16.0s: Câu 4 — nhấn mạnh cả 2 đường đều 6 bước
+            scheduler.after(16000, () => {
+              setCue(["s6-card-opt", "s6-card-risky"], S6_CUES);
+            });
+            // 21.4s: Câu 5 — bắt đầu chạy đua thực tế & nhấn 2 ô bẫy bên phải
+            scheduler.after(21400, () => {
+              setCue([], S6_CUES);
+              runRaceStep();
+              gRisky.setFocusCells([6, 10], "red");
+            });
+            scheduler.after(28400, () => gRisky.setFocusCells([]));
+            // 29.1s: Câu 6 — thông số bên trái (gồm Timeout 0.0%)
+            scheduler.after(29100, () => setCue("s6-stats-opt", S6_CUES));
+            // 38.8s: Câu 7 — thông số bên phải (gồm Timeout 8.3%)
+            scheduler.after(38800, () => setCue("s6-stats-risky", S6_CUES));
+            // 49.8s: Câu 8 — kết luận
+            scheduler.after(49800, () => setCue("s6-conclusion", S6_CUES));
+          } else {
+            scheduler.after(600, runRaceStep);
+          }
         },
         step() {
           goToScene(0);
@@ -1220,7 +1473,8 @@
         goToScene(currentIdx + 1);
       }
     },
-    (idx) => goToScene(idx)
+    (idx) => goToScene(idx),
+    () => autoPlay
   );
 
   const dots = scenes.map((_, idx) => {

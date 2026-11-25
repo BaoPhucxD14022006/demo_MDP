@@ -122,9 +122,11 @@ def build_web_data() -> dict:
 
     V_risky = vi_solver.evaluate_policy(pi_risky)
 
-    # Thống kê Monte Carlo 1000 tập (seed mặc định 42)
+    # Thống kê Monte Carlo 1000 tập (cố định seed action_space để số liệu lặp lại chính xác)
+    env_rand = GridWorldEnv(slip=slip, step_cost=step_cost, wall_cost=wall_cost)
+    env_rand.action_space.seed(237)
     stats_random = vi_solver.simulate_policy(
-        GridWorldEnv(slip=slip, step_cost=step_cost, wall_cost=wall_cost),
+        env_rand,
         None,
         n_episodes=1000,
     )

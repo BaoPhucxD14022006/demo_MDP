@@ -147,6 +147,7 @@ python scripts/export_figures.py
 | **Kỳ vọng $V(\text{Start})$** | **$6.78$** (Giá trị kỳ vọng cao vượt trội) | **$2.07$** (Bị kéo sụt giảm nghiêm trọng) |
 | **Tỉ lệ thành công (1000 ep)** | **$88.5\%$** | **$63.4\%$** |
 | **Tỉ lệ rơi vào bẫy** | **$11.5\%$** (Chỉ chịu rủi ro tại ô $(4,3)$) | **$28.3\%$** (Rủi ro trượt cao gấp gần 3 lần) |
+| **Quá 50 bước (Timeout)** | **$0.0\%$** | **$8.3\%$** (Kẹt ở góc trên nếu trượt liên tiếp) |
 | **Độ dài lý thuyết** | **6 bước** (3 Lên + 3 Phải) | **6 bước** (3 Phải + 3 Lên - BẰNG NHAU) |
 | **Kết luận toán học** | Toán Bellman tự cân bằng giữa bước đi và rủi ro trượt vào bẫy $(-10)$ để tự chọn đường đi vòng an toàn mà không cần code cứng! |
 

@@ -1,6 +1,6 @@
 # KỊCH BẢN & LỜI THUYẾT TRÌNH DEMO MDP GRIDWORLD 4×4 (~5 PHÚT)
 
-- **Tổng thời lượng audio:** `04:51` (290.9 giây)
+- **Tổng thời lượng audio:** `04:53` (293.5 giây)
 - **Giọng đọc AI:** `pnnbao-ump/VieNeu-TTS-v3-Turbo` (48 kHz)
 - **File âm thanh tổng hợp:** `web/audio/full_voiceover_5min.mp3` (và `.wav`)
 - **Cách quay video khớp lời tự động:** Mở `web/index.html`, bấm **F** (toàn màn hình) → **H** (ẩn thanh phím tắt) → **A** (tự động phát hình + giọng đọc từ đầu đến cuối).
@@ -13,11 +13,11 @@
 |---|---|---|
 | `00:00 – 00:34` | Cảnh 1 (Phần 1) — Mô hình hóa MDP trên GridWorld 4x4 | 34.5s |
 | `00:36 – 00:58` | Cảnh 1 (Phần 2) — Động lực chuyển trạng thái ngẫu nhiên 80 / 10 / 10 | 22.5s |
-| `00:59 – 01:40` | Cảnh 2 — Agent hành động ngẫu nhiên (Baseline thất bại) | 40.5s |
-| `01:41 – 02:29` | Cảnh 3 — Thuật toán Value Iteration (Lặp giá trị tối ưu) | 48.1s |
-| `02:30 – 03:10` | Cảnh 4 — Thuật toán Policy Iteration (Lặp chính sách) | 39.2s |
+| `00:59 – 01:40` | Cảnh 2 — Agent hành động ngẫu nhiên (Baseline thất bại) | 41.0s |
+| `01:42 – 02:30` | Cảnh 3 — Thuật toán Value Iteration (Lặp giá trị tối ưu) | 48.1s |
+| `02:31 – 03:10` | Cảnh 4 — Thuật toán Policy Iteration (Lặp chính sách) | 39.2s |
 | `03:11 – 03:55` | Cảnh 5 — Thực thi chính sách tối ưu π* | 44.1s |
-| `03:56 – 04:51` | Cảnh 6 — Đối chiếu π* vs Đường tắt sát bẫy | 54.9s |
+| `03:57 – 04:53` | Cảnh 6 — Đối chiếu π* vs Đường tắt sát bẫy | 56.9s |
 
 ---
 
@@ -46,17 +46,17 @@ Chính độ trượt 20% này khiến việc đi sát mép bẫy trở nên c�
 ## [00:59 – 01:40] Cảnh 2 — Agent hành động ngẫu nhiên (Baseline thất bại)
 
 > **Hiệu ứng trên màn hình:** Robot chạy liên tiếp các tập ngẫu nhiên, vệt xám loằng ngoằng, liên tục nháy đỏ rơi vào Bẫy −10; bảng thống kê 1000 tập bên phải.  
-> **File audio:** `web/audio/seg_2.mp3` (40.5s)
+> **File audio:** `web/audio/seg_2.mp3` (41.0s)
 
 Bây giờ, ta quan sát tác tử hành động hoàn toàn ngẫu nhiên trên lưới 4×4. Ở mỗi bước, robot chọn đều một trong 4 hướng mà không xét đến vị trí Đích hay hai ô Bẫy ở cột 3.
 
-Chỉ sau vài bước di chuyển loằng ngoằng, cộng thêm xác suất trượt 20%, robot nhanh chóng rơi vào Bẫy `−10`. Kiểm chứng Monte Carlo trên **1.000 tập** cho thấy: tỉ lệ thành công chỉ khoảng **6.8%**, tỉ lệ rơi bẫy lên tới **~90.8%**, điểm thưởng trung bình khoảng **−9.89**.
+Chỉ sau vài bước di chuyển loằng ngoằng, cộng thêm xác suất trượt 20%, robot nhanh chóng rơi vào Bẫy `−10`. Kiểm chứng Monte Carlo trên **1.000 tập** (tối đa **50 bước/tập**) cho thấy: tỉ lệ thành công chỉ đạt **6.8%**, tỉ lệ rơi bẫy lên tới **90.2%**, và **3.0%** bị **Timeout** do đi quá 50 bước, kéo điểm thưởng trung bình xuống **−9.90**.
 
 Vì vậy, ta cần áp dụng hai thuật toán Quy hoạch động kinh điển để tìm chính sách tối ưu.
 
 ---
 
-## [01:41 – 02:29] Cảnh 3 — Thuật toán Value Iteration (Lặp giá trị tối ưu)
+## [01:42 – 02:30] Cảnh 3 — Thuật toán Value Iteration (Lặp giá trị tối ưu)
 
 > **Hiệu ứng trên màn hình:** Bản đồ nhiệt V(s) lan tỏa dần từ Đích qua 48 vòng lặp, đồng thời đường cong max |ΔV| trên đồ thị log tiến dần xuống dưới ngưỡng θ = 10⁻⁴.  
 > **File audio:** `web/audio/seg_3.mp3` (48.1s)
@@ -69,7 +69,7 @@ Trên đồ thị sai số cực đại thang log, đường cong giảm đều 
 
 ---
 
-## [02:30 – 03:10] Cảnh 4 — Thuật toán Policy Iteration (Lặp chính sách)
+## [02:31 – 03:10] Cảnh 4 — Thuật toán Policy Iteration (Lặp chính sách)
 
 > **Hiệu ứng trên màn hình:** Luân phiên Pha 1 (Đánh giá V^π) và Pha 2 (Cải tiến π, tô vàng các ô đổi hướng mũi tên); hội tụ hoàn toàn sau 3 vòng.  
 > **File audio:** `web/audio/seg_4.mp3` (39.2s)
@@ -95,14 +95,14 @@ Toàn bộ hành vi né bẫy tự nảy sinh từ phép tối ưu Bellman mà k
 
 ---
 
-## [03:56 – 04:51] Cảnh 6 — Đối chiếu π* vs Đường tắt sát bẫy
+## [03:57 – 04:53] Cảnh 6 — Đối chiếu π* vs Đường tắt sát bẫy
 
 > **Hiệu ứng trên màn hình:** Hai lưới chạy đua song song: bên trái π* (xanh lá) về đích đều đặn; bên phải đường sát bẫy (đỏ nét đứt) thường xuyên trượt vào bẫy −10.  
-> **File audio:** `web/audio/seg_6.mp3` (54.9s)
+> **File audio:** `web/audio/seg_6.mp3` (56.9s)
 
-Cảnh cuối đối chiếu trực tiếp hai chiến lược có **cùng độ dài lý thuyết 6 bước**:
-- **Bên trái — Chính sách tối ưu $\pi^*$:** lên Cột 1, sang phải Hàng 4 → $V(\text{Start}) = 6.78$, thành công **88.5%**, rơi bẫy **11.5%**.
-- **Bên phải — Đường tắt sát bẫy:** sang phải Hàng 1, lên Cột 4 → $V(\text{Start}) = 2.07$, thành công **63.4%**, rơi bẫy **28.3%**.
+Cảnh cuối đối chiếu trực tiếp hai chiến lược có **cùng độ dài lý thuyết 6 bước** (giới hạn 50 bước/tập):
+- **Bên trái — Chính sách tối ưu $\pi^*$:** lên Cột 1, sang phải Hàng 4 → $V(\text{Start}) = 6.78$, thành công **88.5%**, rơi bẫy **11.5%**, Timeout **0.0%**.
+- **Bên phải — Đường tắt sát bẫy:** sang phải Hàng 1, lên Cột 4 → $V(\text{Start}) = 2.07$, thành công **63.4%**, rơi bẫy **28.3%**, Timeout **8.3%**.
 
 **Kết luận:** Cùng 6 bước đi, nhưng đường sát bẫy rủi ro cao hơn nhiều. Toán học MDP đã tự cân bằng giữa chi phí từng bước (`-0.04`) và độ an toàn dài hạn trước rủi ro trượt 20%. Cảm ơn thầy cô và các bạn đã theo dõi!
 

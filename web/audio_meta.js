@@ -1,6 +1,6 @@
 window.MDP_AUDIO = {
   "gapMs": 1200,
-  "totalSec": 290.93,
+  "totalSec": 293.49,
   "segments": {
     "s1a": {
       "src": "audio/seg_1a.mp3",
@@ -12,7 +12,7 @@ window.MDP_AUDIO = {
     },
     "s2": {
       "src": "audio/seg_2.mp3",
-      "durationMs": 40510
+      "durationMs": 40990
     },
     "s3": {
       "src": "audio/seg_3.mp3",
@@ -28,7 +28,7 @@ window.MDP_AUDIO = {
     },
     "s6": {
       "src": "audio/seg_6.mp3",
-      "durationMs": 54850
+      "durationMs": 56930
     }
   }
 };
