@@ -141,23 +141,28 @@ SEGMENTS: list[dict] = [
     {
         "key": "s6",
         "filename": "seg_6.mp3",
-        "title": "Cảnh 6 — Đối chiếu π* vs Đường tắt sát bẫy",
-        "visual_cue": "Hai lưới chạy đua song song: bên trái π* (xanh lá) về đích đều đặn; bên phải đường sát bẫy (đỏ nét đứt) thường xuyên trượt vào bẫy −10.",
+        "title": "Cảnh 6 — Đối chiếu nghiệm tối ưu π* và Chính sách tự đặt sát bẫy",
+        "visual_cue": "Hai lưới chạy đua song song: bên trái nghiệm tối ưu π* (xanh lá) đi vòng an toàn Cột 1 → Hàng 4; bên phải chính sách tự đặt sát bẫy (đỏ nét đứt) đi qua 3 điểm rủi ro và dễ rơi bẫy hoặc kẹt tường trên.",
         "tts_sentences": [
-            "Ở cảnh cuối cùng này, chúng ta đặt hai chiến lược cạnh nhau để chạy đua trực tiếp.",
-            "Bên trái là chính sách tối ưu pi sao đi vòng lên cột một rồi sang phải hàng bốn.",
-            "Bên phải là đường tắt mạo hiểm đi sang phải hàng một rồi lên dọc cột bốn, áp sát hai ô bẫy.",
-            "Cả hai con đường đều có độ dài lý thuyết bằng hệt nhau là sáu bước đi từ xuất phát tới đích.",
-            "Tuy nhiên, đường sát bẫy bên phải đi dọc cạnh hai ô bẫy ba hai và ba ba nên rất dễ bị trượt hai mươi phần trăm hất vào bẫy âm mười.",
-            "Trên một nghìn tập, chính sách tối ưu đạt kỳ vọng sáu phẩy bảy mươi tám, thắng tám mươi tám phẩy năm phần trăm, rơi bẫy mười một phẩy năm phần trăm và không có tập nào bị tham ao.",
-            "Trong khi đó, đường sát bẫy chỉ đạt kỳ vọng hai phẩy không bảy, tỉ lệ thắng tụt xuống sáu mươi ba phẩy bốn phần trăm, rơi bẫy tăng lên hai mươi tám phẩy ba phần trăm và tám phẩy ba phần trăm bị tham ao.",
-            "Như vậy, toán học Em Đi Pi đã tự động cân bằng giữa chi phí bước đi và độ an toàn dài hạn. Cảm ơn thầy cô và các bạn đã theo dõi.",
+            "Ở cảnh cuối cùng này, để thấy rõ vì sao thuật toán lại chọn nhánh đi vòng bên trái, ta đặt nghiệm tối ưu pi sao đối chiếu trực tiếp với một chính sách tự đặt bằng tay ở bên phải.",
+            "Bên trái là chính sách tối ưu pi sao do Quy hoạch động giải ra: rô bốt đi thẳng lên dọc cột một tới hàng bốn rồi rẽ phải về đích, tốn đúng sáu bước lý thuyết.",
+            "Còn bên phải không phải nghiệm của thuật toán, mà là một chiến lược đối chứng tự chọn: ép rô bốt đi sang phải hết hàng một rồi đi thẳng lên theo cột bốn, cũng dài đúng sáu bước như nhau.",
+            "Nếu môi trường không có độ trượt, hai lộ trình sáu bước này sẽ tốt ngang nhau; nhưng khi có hai mươi phần trăm xác suất trượt vuông góc ở mỗi bước, độ an toàn của chúng lại khác biệt hoàn toàn.",
+            "Với chính sách pi sao bên trái, suốt chặng đi lên cột một rô bốt tránh xa hẳn cụm bẫy; lỡ trượt sang cột hai thì mũi tên tại đó lại đưa nó quay về cột một, nên chỉ chịu rủi ro trượt duy nhất một lần tại ô ba bốn sát đích.",
+            "Ngược lại, lộ trình tự đặt bên phải đi men sát cụm bẫy nên phải băng qua tới ba điểm nguy hiểm liên tiếp tại các ô ba một, bốn hai và bốn ba, nơi chỉ một cú trượt mười phần trăm là rơi thẳng vào bẫy âm mười.",
+            "Chưa kể ở bên phải, nếu từ hàng một rô bốt lỡ trượt sớm lên vùng phía trên bên trái, các mũi tên chỉ thẳng lên sẽ làm nó kẹt cứng ở tường trên cùng cho đến khi hết năm mươi bước.",
+            "Kiểm chứng trên một nghìn tập mô phỏng cho thấy sự chênh lệch rất lớn: chính sách tối ưu bên trái đạt giá trị kỳ vọng sáu phẩy bảy mươi tám, tỉ lệ thắng tám mươi tám phẩy năm phần trăm, rơi bẫy mười một phẩy năm phần trăm và không có tập nào bị tham ao.",
+            "Trong khi đó, chính sách sát bẫy bên phải có kỳ vọng sụt mạnh xuống chỉ còn hai phẩy không bảy, tỉ lệ thắng giảm còn sáu mươi ba phẩy bốn phần trăm, rơi bẫy tăng vọt lên hai mươi tám phẩy ba phần trăm và tám phẩy ba phần trăm bị tham ao.",
+            "Từ thực nghiệm này, ta rút ra thông điệp cốt lõi của Em Đi Pi: trong môi trường ngẫu nhiên, đường ngắn nhất chưa chắc đã tối ưu; phương trình BEO men tự động định lượng rủi ro để chọn lộ trình an toàn dài hạn mà không cần gán bất kỳ quy tắc né bẫy thủ công nào.",
+            "Phần trình bày minh họa thực nghiệm Quy hoạch động trên lưới bốn nhân bốn của nhóm mình đến đây là kết thúc. Xin chân thành cảm ơn thầy cô và các bạn đã chú ý lắng nghe.",
         ],
         "display_text": (
-            "Cảnh cuối đối chiếu trực tiếp hai chiến lược có **cùng độ dài lý thuyết 6 bước** (giới hạn 50 bước/tập):\n"
-            "- **Bên trái — Chính sách tối ưu $\\pi^*$:** lên Cột 1, sang phải Hàng 4 → $V(\\text{Start}) = 6.78$, thành công **88.5%**, rơi bẫy **11.5%**, Timeout **0.0%**.\n"
-            "- **Bên phải — Đường tắt sát bẫy:** sang phải Hàng 1, lên Cột 4 → $V(\\text{Start}) = 2.07$, thành công **63.4%**, rơi bẫy **28.3%**, Timeout **8.3%**.\n\n"
-            "**Kết luận:** Cùng 6 bước đi, nhưng đường sát bẫy rủi ro cao hơn nhiều. Toán học MDP đã tự cân bằng giữa chi phí từng bước (`-0.04`) và độ an toàn dài hạn trước rủi ro trượt 20%. Cảm ơn thầy cô và các bạn đã theo dõi!"
+            "Ở cảnh cuối cùng này, để thấy rõ vì sao thuật toán lại chọn nhánh đi vòng bên trái, ta đặt **nghiệm tối ưu $\\pi^*$** đối chiếu trực tiếp với **một chính sách tự đặt bằng tay** ở bên phải.\n\n"
+            "Bên trái là chính sách tối ưu $\\pi^*$ do Quy hoạch động giải ra: robot đi thẳng lên dọc Cột 1 tới Hàng 4 rồi rẽ phải về Đích, tốn đúng **6 bước lý thuyết**. Còn bên phải **không phải nghiệm của thuật toán**, mà là một chiến lược đối chứng tự chọn: ép robot đi sang phải hết Hàng 1 rồi đi thẳng lên theo Cột 4, cũng dài đúng **6 bước** như nhau. Nếu môi trường không có độ trượt, hai lộ trình 6 bước này sẽ tốt ngang nhau; nhưng khi có **20% xác suất trượt vuông góc** ở mỗi bước, độ an toàn của chúng lại khác biệt hoàn toàn.\n\n"
+            "Với chính sách $\\pi^*$ bên trái, suốt chặng đi lên Cột 1 robot tránh xa hẳn cụm bẫy; lỡ trượt sang Cột 2 thì mũi tên tại đó lại đưa nó quay về Cột 1, nên chỉ chịu rủi ro trượt **duy nhất 1 lần** tại ô `(3,4)` sát Đích. Ngược lại, lộ trình tự đặt bên phải đi men sát cụm bẫy nên phải băng qua tới **3 điểm nguy hiểm liên tiếp** tại các ô `(3,1)`, `(4,2)` và `(4,3)`, nơi chỉ một cú trượt 10% là rơi thẳng vào bẫy `-10`. Chưa kể ở bên phải, nếu từ Hàng 1 robot lỡ trượt sớm lên vùng phía trên bên trái, các mũi tên chỉ thẳng lên sẽ làm nó **kẹt cứng ở tường trên cùng** cho đến khi hết 50 bước.\n\n"
+            "Kiểm chứng trên **1.000 tập mô phỏng** cho thấy sự chênh lệch rất lớn: chính sách tối ưu bên trái đạt giá trị kỳ vọng **6.78**, tỉ lệ thắng **88.5%**, rơi bẫy **11.5%** và không có tập nào bị **Timeout** (`0.0%`). Trong khi đó, chính sách sát bẫy bên phải có kỳ vọng sụt mạnh xuống chỉ còn **2.07**, tỉ lệ thắng giảm còn **63.4%**, rơi bẫy tăng vọt lên **28.3%** và **8.3%** bị **Timeout**.\n\n"
+            "**Thông điệp cốt lõi của MDP:** Trong môi trường ngẫu nhiên, đường ngắn nhất chưa chắc đã tối ưu; phương trình Bellman tự động định lượng rủi ro để chọn lộ trình an toàn dài hạn mà không cần gán bất kỳ quy tắc né bẫy thủ công nào.\n\n"
+            "Phần trình bày minh họa thực nghiệm Quy hoạch động trên lưới 4×4 của nhóm mình đến đây là kết thúc. Xin chân thành cảm ơn thầy cô và các bạn đã chú ý lắng nghe!"
         ),
     },
 ]
@@ -220,7 +225,7 @@ def generate_all(only_keys: set[str] | None = None) -> None:
 
     lead_sec = 0.40
     tail_sec = 0.50
-    pause_sec = 0.85 if only_keys else 0.42
+    pause_sec = 0.55 if only_keys else 0.42
 
     if only_keys is None:
         def compute_total(p_sec: float) -> float:
@@ -253,6 +258,10 @@ def generate_all(only_keys: set[str] | None = None) -> None:
             mp3_file = audio_dir / seg["filename"]
 
             if key in raw_sentences:
+                cur_ms = int(round(lead_sec * 1000))
+                for s_i, w in enumerate(raw_sentences[key], start=1):
+                    print(f"      [Cue {key} #{s_i}] start={cur_ms}ms")
+                    cur_ms += int(round((len(w) / SAMPLE_RATE + pause_sec) * 1000))
                 seg_wav = _assemble_segment(raw_sentences[key], lead_sec, pause_sec, tail_sec)
                 wav_file = tmp_path / f"{key}.wav"
                 sf.write(str(wav_file), seg_wav, SAMPLE_RATE)
@@ -271,10 +280,11 @@ def generate_all(only_keys: set[str] | None = None) -> None:
                 seg_wav = np.asarray(seg_wav, dtype=np.float32).reshape(-1)
 
             seg_dur = len(seg_wav) / SAMPLE_RATE
+            dur_ms = int(round(seg_dur * 1000))
 
             meta_segments[key] = {
-                "src": f"audio/{seg['filename']}",
-                "durationMs": int(round(seg_dur * 1000)),
+                "src": f"audio/{seg['filename']}?d={dur_ms}",
+                "durationMs": dur_ms,
             }
             timeline_rows.append(
                 {
@@ -312,7 +322,7 @@ def generate_all(only_keys: set[str] | None = None) -> None:
     )
 
     md_lines = [
-        "# KỊCH BẢN & LỜI THUYẾT TRÌNH DEMO MDP GRIDWORLD 4×4 (~5 PHÚT)",
+        "# KỊCH BẢN & LỜI THUYẾT TRÌNH DEMO MDP GRIDWORLD 4×4 (~6 PHÚT)",
         "",
         f"- **Tổng thời lượng audio:** `{_fmt_mmss(total_sec)}` ({total_sec:.1f} giây)",
         "- **Giọng đọc AI:** `pnnbao-ump/VieNeu-TTS-v3-Turbo` (48 kHz)",

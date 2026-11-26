@@ -1,6 +1,6 @@
-# KỊCH BẢN & LỜI THUYẾT TRÌNH DEMO MDP GRIDWORLD 4×4 (~5 PHÚT)
+# KỊCH BẢN & LỜI THUYẾT TRÌNH DEMO MDP GRIDWORLD 4×4 (~6 PHÚT)
 
-- **Tổng thời lượng audio:** `05:08` (307.5 giây)
+- **Tổng thời lượng audio:** `06:10` (369.6 giây)
 - **Giọng đọc AI:** `pnnbao-ump/VieNeu-TTS-v3-Turbo` (48 kHz)
 - **File âm thanh tổng hợp:** `web/audio/full_voiceover_5min.mp3` (và `.wav`)
 - **Cách quay video khớp lời tự động:** Mở `web/index.html`, bấm **F** (toàn màn hình) → **H** (ẩn thanh phím tắt) → **A** (tự động phát hình + giọng đọc từ đầu đến cuối).
@@ -17,7 +17,7 @@
 | `01:42 – 02:44` | Cảnh 3 — Thuật toán Value Iteration & Trích xuất chính sách π* | 62.1s |
 | `02:45 – 03:24` | Cảnh 4 — Thuật toán Policy Iteration (Lặp chính sách) | 39.2s |
 | `03:25 – 04:09` | Cảnh 5 — Thực thi chính sách tối ưu π* | 44.1s |
-| `04:11 – 05:08` | Cảnh 6 — Đối chiếu π* vs Đường tắt sát bẫy | 56.9s |
+| `04:11 – 06:10` | Cảnh 6 — Đối chiếu nghiệm tối ưu π* và Chính sách tự đặt sát bẫy | 119.0s |
 
 ---
 
@@ -95,15 +95,21 @@ Toàn bộ hành vi né bẫy tự nảy sinh từ phép tối ưu Bellman mà k
 
 ---
 
-## [04:11 – 05:08] Cảnh 6 — Đối chiếu π* vs Đường tắt sát bẫy
+## [04:11 – 06:10] Cảnh 6 — Đối chiếu nghiệm tối ưu π* và Chính sách tự đặt sát bẫy
 
-> **Hiệu ứng trên màn hình:** Hai lưới chạy đua song song: bên trái π* (xanh lá) về đích đều đặn; bên phải đường sát bẫy (đỏ nét đứt) thường xuyên trượt vào bẫy −10.  
-> **File audio:** `web/audio/seg_6.mp3` (56.9s)
+> **Hiệu ứng trên màn hình:** Hai lưới chạy đua song song: bên trái nghiệm tối ưu π* (xanh lá) đi vòng an toàn Cột 1 → Hàng 4; bên phải chính sách tự đặt sát bẫy (đỏ nét đứt) đi qua 3 điểm rủi ro và dễ rơi bẫy hoặc kẹt tường trên.  
+> **File audio:** `web/audio/seg_6.mp3` (119.0s)
 
-Cảnh cuối đối chiếu trực tiếp hai chiến lược có **cùng độ dài lý thuyết 6 bước** (giới hạn 50 bước/tập):
-- **Bên trái — Chính sách tối ưu $\pi^*$:** lên Cột 1, sang phải Hàng 4 → $V(\text{Start}) = 6.78$, thành công **88.5%**, rơi bẫy **11.5%**, Timeout **0.0%**.
-- **Bên phải — Đường tắt sát bẫy:** sang phải Hàng 1, lên Cột 4 → $V(\text{Start}) = 2.07$, thành công **63.4%**, rơi bẫy **28.3%**, Timeout **8.3%**.
+Ở cảnh cuối cùng này, để thấy rõ vì sao thuật toán lại chọn nhánh đi vòng bên trái, ta đặt **nghiệm tối ưu $\pi^*$** đối chiếu trực tiếp với **một chính sách tự đặt bằng tay** ở bên phải.
 
-**Kết luận:** Cùng 6 bước đi, nhưng đường sát bẫy rủi ro cao hơn nhiều. Toán học MDP đã tự cân bằng giữa chi phí từng bước (`-0.04`) và độ an toàn dài hạn trước rủi ro trượt 20%. Cảm ơn thầy cô và các bạn đã theo dõi!
+Bên trái là chính sách tối ưu $\pi^*$ do Quy hoạch động giải ra: robot đi thẳng lên dọc Cột 1 tới Hàng 4 rồi rẽ phải về Đích, tốn đúng **6 bước lý thuyết**. Còn bên phải **không phải nghiệm của thuật toán**, mà là một chiến lược đối chứng tự chọn: ép robot đi sang phải hết Hàng 1 rồi đi thẳng lên theo Cột 4, cũng dài đúng **6 bước** như nhau. Nếu môi trường không có độ trượt, hai lộ trình 6 bước này sẽ tốt ngang nhau; nhưng khi có **20% xác suất trượt vuông góc** ở mỗi bước, độ an toàn của chúng lại khác biệt hoàn toàn.
+
+Với chính sách $\pi^*$ bên trái, suốt chặng đi lên Cột 1 robot tránh xa hẳn cụm bẫy; lỡ trượt sang Cột 2 thì mũi tên tại đó lại đưa nó quay về Cột 1, nên chỉ chịu rủi ro trượt **duy nhất 1 lần** tại ô `(3,4)` sát Đích. Ngược lại, lộ trình tự đặt bên phải đi men sát cụm bẫy nên phải băng qua tới **3 điểm nguy hiểm liên tiếp** tại các ô `(3,1)`, `(4,2)` và `(4,3)`, nơi chỉ một cú trượt 10% là rơi thẳng vào bẫy `-10`. Chưa kể ở bên phải, nếu từ Hàng 1 robot lỡ trượt sớm lên vùng phía trên bên trái, các mũi tên chỉ thẳng lên sẽ làm nó **kẹt cứng ở tường trên cùng** cho đến khi hết 50 bước.
+
+Kiểm chứng trên **1.000 tập mô phỏng** cho thấy sự chênh lệch rất lớn: chính sách tối ưu bên trái đạt giá trị kỳ vọng **6.78**, tỉ lệ thắng **88.5%**, rơi bẫy **11.5%** và không có tập nào bị **Timeout** (`0.0%`). Trong khi đó, chính sách sát bẫy bên phải có kỳ vọng sụt mạnh xuống chỉ còn **2.07**, tỉ lệ thắng giảm còn **63.4%**, rơi bẫy tăng vọt lên **28.3%** và **8.3%** bị **Timeout**.
+
+**Thông điệp cốt lõi của MDP:** Trong môi trường ngẫu nhiên, đường ngắn nhất chưa chắc đã tối ưu; phương trình Bellman tự động định lượng rủi ro để chọn lộ trình an toàn dài hạn mà không cần gán bất kỳ quy tắc né bẫy thủ công nào.
+
+Phần trình bày minh họa thực nghiệm Quy hoạch động trên lưới 4×4 của nhóm mình đến đây là kết thúc. Xin chân thành cảm ơn thầy cô và các bạn đã chú ý lắng nghe!
 
 ---

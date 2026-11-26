@@ -16,7 +16,7 @@
     s3: 62130,
     s4: 39230,
     s5: 44110,
-    s6: 56930,
+    s6: 119010,
   };
 
   function segDurationMs(key) {
@@ -458,28 +458,29 @@
       this.slipLayer.innerHTML = "";
       if (!mode || mode === "none") return;
       const { x, y } = this.cellCenter(0);
+      const sc = this.compact ? 0.68 : 1;
 
-      this._drawSvgArrow(this.slipLayer, x, y - 28, x, y - 125, "#16A34A", 7, 16);
+      this._drawSvgArrow(this.slipLayer, x, y - 28 * sc, x, y - 125 * sc, "#16A34A", 7 * sc, 16 * sc);
       const tMain = svgEl("text", {
-        x: x + 16, y: y - 92,
-        fill: "#15803D", "font-size": 24, "font-weight": 800,
+        x: x + 16 * sc, y: y - 92 * sc,
+        fill: "#15803D", "font-size": Math.round(24 * sc), "font-weight": 800,
       });
       tMain.textContent = "80% thẳng";
       this.slipLayer.appendChild(tMain);
 
       if (mode === "all") {
-        this._drawSvgArrow(this.slipLayer, x + 28, y, x + 115, y, "#F59E0B", 4, 12);
+        this._drawSvgArrow(this.slipLayer, x + 28 * sc, y, x + 115 * sc, y, "#F59E0B", 4 * sc, 12 * sc);
         const tRight = svgEl("text", {
-          x: x + 56, y: y - 14,
-          fill: "#B45309", "font-size": 20, "font-weight": 700,
+          x: x + 56 * sc, y: y - 14 * sc,
+          fill: "#B45309", "font-size": Math.round(20 * sc), "font-weight": 700,
         });
         tRight.textContent = "10% trượt";
         this.slipLayer.appendChild(tRight);
 
-        this._drawSvgArrow(this.slipLayer, x - 26, y, x - 72, y, "#F59E0B", 4, 11);
+        this._drawSvgArrow(this.slipLayer, x - 24 * sc, y, x - (this.compact ? 52 : 72), y, "#F59E0B", 4 * sc, 11 * sc);
         const tLeft = svgEl("text", {
-          x: x - 74, y: y - 14,
-          fill: "#B45309", "font-size": 19, "font-weight": 700,
+          x: x - (this.compact ? 50 : 74), y: y - 14 * sc,
+          fill: "#B45309", "font-size": Math.round(19 * sc), "font-weight": 700,
         });
         tLeft.textContent = "10%";
         this.slipLayer.appendChild(tLeft);
@@ -1290,24 +1291,52 @@
       };
     }
 
-    // 6. So sánh π* vs đường tắt sát bẫy (s6: 54.85s)
+    // 6. Đối chiếu nghiệm π* vs Chính sách tự đặt sát bẫy (s6: 119.01s)
     function scene6() {
       let gOpt = null;
       let gRisky = null;
       let pairPos = 0;
       let stepIdx = 0;
+      let raceStarted = false;
       let statusOptEl = null;
       let statusRiskyEl = null;
 
       const OPT_THEORY = [0, 4, 8, 12, 13, 14, 15];
       const RISKY_THEORY = [0, 1, 2, 3, 7, 11, 15];
       const RACE_PAIRS = [[7, 5], [11, 1], [14, 2], [4, 3], [21, 6], [15, 7], [8, 10], [9, 16]];
-      const S6_CUES = ["s6-card-opt", "s6-card-risky", "s6-stats-opt", "s6-stats-risky", "s6-conclusion"];
+      const S6_CUES = ["s6-card-opt", "s6-card-risky", "s6-conclusion"];
+      const S6_STAT_ITEMS = [
+        "s6-opt-v", "s6-opt-win", "s6-opt-trap", "s6-opt-to",
+        "s6-risk-v", "s6-risk-win", "s6-risk-trap", "s6-risk-to",
+      ];
 
       function animateTheoreticalPath(grid, states, color, dashed, stepDelay) {
         for (let len = 2; len <= states.length; len++) {
           scheduler.after((len - 2) * stepDelay, () => {
             grid.drawPath(states.slice(0, len), { color, dashed, width: 6, opacity: 0.85, layerId: "theory", halo: true });
+          });
+        }
+      }
+
+      function playDemoTrace(grid, statusEl, states, actions, color, stepMs, startHeading, endLabel, endKind, runningLabel = "Đang mô phỏng") {
+        for (const c of grid.cells) c.el.classList.remove("flash-trap", "flash-goal");
+        grid.drawPath([], { layerId: "live" });
+        grid.moveRobot(states[0], startHeading, true);
+        statusEl.className = "status-pill running";
+        statusEl.textContent = runningLabel;
+
+        for (let i = 0; i < actions.length; i++) {
+          scheduler.after((i + 1) * stepMs, () => {
+            if (raceStarted) return;
+            grid.drawPath(states.slice(0, i + 2), { color, width: 6, opacity: 0.95, layerId: "live", halo: true });
+            grid.moveRobot(states[i + 1], actions[i], false);
+            if (i + 1 === actions.length) {
+              if (endKind === "goal" || endKind === "trap") {
+                grid.flashCell(states[states.length - 1], endKind);
+              }
+              statusEl.className = "status-pill " + endKind;
+              statusEl.textContent = endLabel;
+            }
           });
         }
       }
@@ -1378,6 +1407,7 @@
         enter() {
           pairPos = 0;
           stepIdx = 0;
+          raceStarted = false;
           const stOpt = DATA.stats.optimal;
           const stRisky = DATA.stats.risky;
 
@@ -1386,24 +1416,24 @@
               <div class="compare-pair">
                 <div id="s6-card-opt" class="compare-card">
                   <div class="compare-card-header">
-                    <span class="compare-card-title opt">Chính sách tối ưu π* (Đi vòng an toàn)</span>
+                    <span class="compare-card-title opt">Nghiệm tối ưu π* (Đi vòng an toàn)</span>
                     <span id="s6-st-opt" class="status-pill running">Đang chạy</span>
                   </div>
                   <div id="s6-grid-opt"></div>
                   <div id="s6-stats-opt" class="compare-stats">
-                    <div class="compare-stat-item">
+                    <div id="s6-opt-v" class="compare-stat-item">
                       <div class="compare-stat-label">V(Start)</div>
                       <div class="compare-stat-val" style="color:var(--start)">${DATA.vi.V_star[0].toFixed(2)}</div>
                     </div>
-                    <div class="compare-stat-item">
+                    <div id="s6-opt-win" class="compare-stat-item">
                       <div class="compare-stat-label">Thành công</div>
                       <div class="compare-stat-val" style="color:var(--opt)">${fmtPct(stOpt.success_rate)}</div>
                     </div>
-                    <div class="compare-stat-item">
+                    <div id="s6-opt-trap" class="compare-stat-item">
                       <div class="compare-stat-label">Rơi bẫy</div>
                       <div class="compare-stat-val" style="color:var(--risky)">${fmtPct(stOpt.trap_rate)}</div>
                     </div>
-                    <div class="compare-stat-item">
+                    <div id="s6-opt-to" class="compare-stat-item">
                       <div class="compare-stat-label">Timeout</div>
                       <div class="compare-stat-val" style="color:var(--muted)">${fmtPct(stOpt.timeout_rate)}</div>
                     </div>
@@ -1412,24 +1442,24 @@
 
                 <div id="s6-card-risky" class="compare-card">
                   <div class="compare-card-header">
-                    <span class="compare-card-title risky">Đường tắt sát bẫy (Mạo hiểm)</span>
+                    <span class="compare-card-title risky">Chính sách tự đặt: Đi sát bẫy (Đối chứng)</span>
                     <span id="s6-st-risky" class="status-pill running">Đang chạy</span>
                   </div>
                   <div id="s6-grid-risky"></div>
                   <div id="s6-stats-risky" class="compare-stats">
-                    <div class="compare-stat-item">
+                    <div id="s6-risk-v" class="compare-stat-item">
                       <div class="compare-stat-label">V(Start)</div>
                       <div class="compare-stat-val" style="color:var(--start)">${DATA.risky.V[0].toFixed(2)}</div>
                     </div>
-                    <div class="compare-stat-item">
+                    <div id="s6-risk-win" class="compare-stat-item">
                       <div class="compare-stat-label">Thành công</div>
                       <div class="compare-stat-val" style="color:var(--opt)">${fmtPct(stRisky.success_rate)}</div>
                     </div>
-                    <div class="compare-stat-item">
+                    <div id="s6-risk-trap" class="compare-stat-item">
                       <div class="compare-stat-label">Rơi bẫy</div>
                       <div class="compare-stat-val" style="color:var(--risky)">${fmtPct(stRisky.trap_rate)}</div>
                     </div>
-                    <div class="compare-stat-item">
+                    <div id="s6-risk-to" class="compare-stat-item">
                       <div class="compare-stat-label">Timeout</div>
                       <div class="compare-stat-val" style="color:var(--muted)">${fmtPct(stRisky.timeout_rate)}</div>
                     </div>
@@ -1438,7 +1468,7 @@
               </div>
 
               <div id="s6-conclusion" class="conclusion-banner">
-                Cùng 6 bước — nhưng đường sát bẫy rủi ro cao hơn. Bellman tự cân bằng chi phí và an toàn.
+                Thông điệp cốt lõi MDP: Đường ngắn nhất chưa chắc tối ưu — phương trình Bellman tự định lượng rủi ro để chọn lộ trình an toàn mà không cần luật né bẫy thủ công.
               </div>
             </div>
           `;
@@ -1453,36 +1483,136 @@
           if (isAutoPlay()) {
             gOpt.moveRobot(0, 0, true);
             gRisky.moveRobot(0, 3, true);
-            statusOptEl.textContent = "Sẵn sàng";
-            statusRiskyEl.textContent = "Sẵn sàng";
+            statusOptEl.textContent = "Nghiệm Quy hoạch động";
+            statusRiskyEl.textContent = "Chính sách tự đặt";
 
-            // 4.9s: Câu 2 — vẽ dần đường vòng π* bên trái
-            scheduler.after(4900, () => {
+            // Câu #1 (0.4s - 9.75s): Giới thiệu 2 bên đặt đối chiếu cạnh nhau
+            scheduler.after(4200, () => setCue("s6-card-opt", S6_CUES));
+            scheduler.after(6600, () => setCue("s6-card-risky", S6_CUES));
+
+            // Câu #2 (9.75s - 18.86s): Bên trái pi* — vẽ đường lý thuyết & robot đi đúng 6 bước
+            scheduler.after(9750, () => {
               setCue("s6-card-opt", S6_CUES);
               animateTheoreticalPath(gOpt, OPT_THEORY, "#16A34A", false, 550);
+              playDemoTrace(
+                gOpt, statusOptEl,
+                OPT_THEORY, [0, 0, 0, 3, 3, 3],
+                "#16A34A", 680, 0, "Đích (6 bước lý thuyết)", "goal", "Đi lên Cột 1 → Hàng 4"
+              );
             });
-            // 10.3s: Câu 3 — vẽ dần đường tắt sát bẫy bên phải
-            scheduler.after(10300, () => {
+
+            // Câu #3 (18.86s - 28.93s): Bên phải tự đặt — vẽ đường lý thuyết & robot đi đúng 6 bước
+            scheduler.after(18860, () => {
               setCue("s6-card-risky", S6_CUES);
               animateTheoreticalPath(gRisky, RISKY_THEORY, "#DC2626", true, 550);
+              playDemoTrace(
+                gRisky, statusRiskyEl,
+                RISKY_THEORY, [3, 3, 3, 0, 0, 0],
+                "#DC2626", 680, 3, "Đích (6 bước lý thuyết)", "goal", "Đi Hàng 1 → lên Cột 4"
+              );
             });
-            // 16.0s: Câu 4 — nhấn mạnh cả 2 đường đều 6 bước
-            scheduler.after(16000, () => {
+
+            // Câu #4 (28.93s - 38.36s): Cùng 6 bước nhưng độ trượt 20% tạo ra khác biệt
+            scheduler.after(28930, () => {
               setCue(["s6-card-opt", "s6-card-risky"], S6_CUES);
+              for (const c of gOpt.cells) c.el.classList.remove("flash-trap", "flash-goal");
+              for (const c of gRisky.cells) c.el.classList.remove("flash-trap", "flash-goal");
+              gOpt.drawPath(OPT_THEORY, { color: "#16A34A", width: 5, opacity: 0.35, layerId: "theory" });
+              gRisky.drawPath(RISKY_THEORY, { color: "#DC2626", dashed: true, width: 5, opacity: 0.35, layerId: "theory" });
+              gOpt.drawPath([], { layerId: "live" });
+              gRisky.drawPath([], { layerId: "live" });
+              gOpt.moveRobot(0, 0, true);
+              gRisky.moveRobot(0, 3, true);
+              statusOptEl.className = "status-pill running";
+              statusOptEl.textContent = "Độ trượt 20%/bước";
+              statusRiskyEl.className = "status-pill running";
+              statusRiskyEl.textContent = "Độ trượt 20%/bước";
             });
-            // 21.4s: Câu 5 — bắt đầu chạy đua thực tế & nhấn 2 ô bẫy bên phải
-            scheduler.after(21400, () => {
-              setCue([], S6_CUES);
-              runRaceStep();
+            scheduler.after(32500, () => {
+              gOpt.showSlipDemo("all");
+              gRisky.showSlipDemo("all");
+            });
+
+            // Câu #5 (38.36s - 50.19s): Bên trái — an toàn Cột 1, trượt sang Cột 2 quay về Cột 1, 1 rủi ro ở (3,4)
+            scheduler.after(38360, () => {
+              gOpt.showSlipDemo("none");
+              gRisky.showSlipDemo("none");
+              setCue("s6-card-opt", S6_CUES);
+              gOpt.setFocusCells([0, 4, 8, 12], "green");
+            });
+            scheduler.after(41500, () => {
+              const epSlipBack = DATA.episodes.optimal[10];
+              playDemoTrace(
+                gOpt, statusOptEl,
+                epSlipBack.states, epSlipBack.actions,
+                "#16A34A", 520, 0, "Quay về Cột 1 → Đích", "goal", "Trượt Cột 2 → quay về Cột 1"
+              );
+            });
+            scheduler.after(42400, () => gOpt.setFocusCells([1, 5, 9], "blue"));
+            scheduler.after(46500, () => gOpt.setFocusCells([14], "amber"));
+
+            // Câu #6 (50.19s - 61.46s): Bên phải — 3 điểm sát bẫy (3,1), (4,2), (4,3) -> rơi bẫy -10
+            scheduler.after(50190, () => {
+              gOpt.setFocusCells([]);
+              setCue("s6-card-risky", S6_CUES);
+              gRisky.setFocusCells([2, 7, 11], "amber");
+              const epTrap1 = DATA.episodes.risky[5];
+              playDemoTrace(
+                gRisky, statusRiskyEl,
+                epTrap1.states, epTrap1.actions,
+                "#DC2626", 600, 3, "Trượt (4,3) → Bẫy −10", "trap", "Qua 3 điểm sát bẫy"
+              );
+            });
+            scheduler.after(56200, () => {
               gRisky.setFocusCells([6, 10], "red");
+              const epTrap2 = DATA.episodes.risky[2];
+              playDemoTrace(
+                gRisky, statusRiskyEl,
+                epTrap2.states, epTrap2.actions,
+                "#DC2626", 550, 3, "Trượt (3,1) → Bẫy −10", "trap", "Rủi ro 10% vào bẫy"
+              );
             });
-            scheduler.after(28400, () => gRisky.setFocusCells([]));
-            // 29.1s: Câu 6 — thông số bên trái (gồm Timeout 0.0%)
-            scheduler.after(29100, () => setCue("s6-stats-opt", S6_CUES));
-            // 38.8s: Câu 7 — thông số bên phải (gồm Timeout 8.3%)
-            scheduler.after(38800, () => setCue("s6-stats-risky", S6_CUES));
-            // 49.8s: Câu 8 — kết luận
-            scheduler.after(49800, () => setCue("s6-conclusion", S6_CUES));
+
+            // Câu #7 (61.46s - 70.73s): Bên phải — trượt sớm lên vùng trên-trái -> kẹt tường trên 50 bước (Timeout)
+            scheduler.after(61460, () => {
+              gRisky.setFocusCells([4, 5, 8, 9, 12, 13], "amber");
+              const epTimeout = DATA.episodes.risky[20];
+              playDemoTrace(
+                gRisky, statusRiskyEl,
+                epTimeout.states.slice(0, 12), epTimeout.actions.slice(0, 11),
+                "#DC2626", 500, 3, "Kẹt tường trên · Timeout (50 bước)", "timeout", "Trượt sớm lên trên-trái..."
+              );
+            });
+            scheduler.after(65800, () => gRisky.setFocusCells([12, 13, 14], "red"));
+
+            // Câu #8 (70.73s - 84.16s): Chạy đua thực tế + đọc từng chỉ số bên trái
+            scheduler.after(70730, () => {
+              raceStarted = true;
+              gOpt.setFocusCells([]);
+              gRisky.setFocusCells([]);
+              setCue("s6-card-opt", S6_CUES);
+              runRaceStep();
+            });
+            scheduler.after(74500, () => setCue("s6-opt-v", S6_STAT_ITEMS));
+            scheduler.after(77900, () => setCue("s6-opt-win", S6_STAT_ITEMS));
+            scheduler.after(80100, () => setCue("s6-opt-trap", S6_STAT_ITEMS));
+            scheduler.after(81800, () => setCue("s6-opt-to", S6_STAT_ITEMS));
+
+            // Câu #9 (84.16s - 98.23s): Đọc từng chỉ số bên phải
+            scheduler.after(84160, () => {
+              setCue([], S6_STAT_ITEMS);
+              setCue("s6-card-risky", S6_CUES);
+            });
+            scheduler.after(86500, () => setCue("s6-risk-v", S6_STAT_ITEMS));
+            scheduler.after(89400, () => setCue("s6-risk-win", S6_STAT_ITEMS));
+            scheduler.after(92400, () => setCue("s6-risk-trap", S6_STAT_ITEMS));
+            scheduler.after(95200, () => setCue("s6-risk-to", S6_STAT_ITEMS));
+
+            // Câu #10 & #11 (98.23s - 119.01s): Thông điệp cốt lõi MDP + lời cảm ơn
+            scheduler.after(98230, () => {
+              setCue([], S6_STAT_ITEMS);
+              setCue("s6-conclusion", S6_CUES);
+            });
           } else {
             scheduler.after(600, runRaceStep);
           }
@@ -1587,7 +1717,6 @@
     btn.className = "scene-dot";
     btn.title = `Cảnh ${idx + 1}`;
     btn.addEventListener("click", () => {
-      stopAutoPlay();
       goToScene(idx);
     });
     dotsEl.appendChild(btn);
@@ -1690,7 +1819,7 @@
     autoPlay = true;
     scheduler.resume();
     autoScheduler.resume();
-    goToScene(0);
+    goToScene(currentIdx);
   }
 
   function goToScene(idx) {
@@ -1711,7 +1840,6 @@
 
   document.addEventListener("keydown", (e) => {
     if (e.key >= "1" && e.key <= "6") {
-      stopAutoPlay();
       goToScene(Number(e.key) - 1);
       return;
     }
@@ -1725,7 +1853,6 @@
         break;
       case "ArrowLeft":
         e.preventDefault();
-        stopAutoPlay();
         if (currentIdx > 0) goToScene(currentIdx - 1);
         break;
       case "p":

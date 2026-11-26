@@ -741,6 +741,14 @@ html, body {
 
 .compare-stat-item {
   text-align: center;
+  padding: 6px 4px;
+  border-radius: 10px;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.compare-stat-item.cue-active {
+  background: #DBEAFE;
+  box-shadow: 0 0 0 2px #2563EB;
 }
 
 .compare-stat-label {
@@ -761,7 +769,7 @@ html, body {
   border-left: 6px solid var(--opt);
   border-radius: 14px;
   padding: 20px 32px;
-  font-size: 25px;
+  font-size: 23px;
   font-weight: 700;
   text-align: center;
   color: var(--text);
