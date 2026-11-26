@@ -500,20 +500,28 @@
 
   // ===================== BỘ LẬP LỊCH THỐNG NHẤT =====================
   class Scheduler {
-    constructor() {
+    constructor(initialSpeed = 1) {
       this.timers = new Set();
       this.paused = false;
+      this.speed = initialSpeed > 0 ? initialSpeed : 1;
+    }
+
+    _arm(item) {
+      item.start = performance.now();
+      const delay = Math.max(0, item.remaining / this.speed);
+      item.id = setTimeout(() => {
+        item.id = null;
+        item.done = true;
+        this.timers.delete(item);
+        item.fn();
+      }, delay);
     }
 
     after(ms, fn) {
       const item = { id: null, fn, remaining: ms, start: performance.now(), done: false };
       this.timers.add(item);
       if (!this.paused) {
-        item.id = setTimeout(() => {
-          item.done = true;
-          this.timers.delete(item);
-          fn();
-        }, ms);
+        this._arm(item);
       }
       return item;
     }
@@ -526,7 +534,8 @@
         if (item.id !== null) {
           clearTimeout(item.id);
           item.id = null;
-          item.remaining = Math.max(0, item.remaining - (now - item.start));
+          const elapsedBase = (now - item.start) * this.speed;
+          item.remaining = Math.max(0, item.remaining - elapsedBase);
         }
       }
     }
@@ -534,15 +543,27 @@
     resume() {
       if (!this.paused) return;
       this.paused = false;
-      const now = performance.now();
       for (const item of [...this.timers]) {
         if (!item.done && item.id === null) {
-          item.start = now;
-          item.id = setTimeout(() => {
-            item.done = true;
-            this.timers.delete(item);
-            item.fn();
-          }, item.remaining);
+          this._arm(item);
+        }
+      }
+    }
+
+    setSpeed(newSpeed) {
+      if (newSpeed <= 0 || newSpeed === this.speed) return;
+      const now = performance.now();
+      const oldSpeed = this.speed;
+      this.speed = newSpeed;
+      if (!this.paused) {
+        for (const item of [...this.timers]) {
+          if (!item.done && item.id !== null) {
+            clearTimeout(item.id);
+            item.id = null;
+            const elapsedBase = (now - item.start) * oldSpeed;
+            item.remaining = Math.max(0, item.remaining - elapsedBase);
+            this._arm(item);
+          }
         }
       }
     }
@@ -1486,14 +1507,30 @@
   const dotsEl = document.getElementById("scene-dots");
   const hintBar = document.getElementById("hint-bar");
   const modeBadge = document.getElementById("mode-badge");
+  const speedControlEl = document.getElementById("speed-control");
 
-  const scheduler = new Scheduler();
+  const SPEED_OPTIONS = [0.5, 0.75, 1, 1.5, 2];
+  let playbackSpeed = 1;
+
+  const scheduler = new Scheduler(playbackSpeed);
+  const autoScheduler = new Scheduler(playbackSpeed);
   const voicePlayer = new Audio();
   let voiceEnabled = Boolean(AUDIO_META);
   let currentIdx = 0;
   let autoPlay = false;
-  let autoTimer = null;
   let hintsVisible = true;
+
+  function applyAudioSpeed() {
+    voicePlayer.defaultPlaybackRate = playbackSpeed;
+    voicePlayer.playbackRate = playbackSpeed;
+    if ("preservesPitch" in voicePlayer) voicePlayer.preservesPitch = true;
+    if ("mozPreservesPitch" in voicePlayer) voicePlayer.mozPreservesPitch = true;
+    if ("webkitPreservesPitch" in voicePlayer) voicePlayer.webkitPreservesPitch = true;
+  }
+
+  voicePlayer.addEventListener("loadedmetadata", applyAudioSpeed);
+  voicePlayer.addEventListener("play", applyAudioSpeed);
+  stage.style.setProperty("--sim-speed", String(playbackSpeed));
 
   function fitStage() {
     const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
@@ -1513,6 +1550,36 @@
     (idx) => goToScene(idx),
     () => autoPlay
   );
+
+  const speedButtons = SPEED_OPTIONS.map((spd) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "speed-btn" + (spd === playbackSpeed ? " active" : "");
+    btn.textContent = `${spd}x`;
+    btn.title = `Tốc độ ${spd}x`;
+    btn.addEventListener("click", () => setPlaybackSpeed(spd));
+    if (speedControlEl) speedControlEl.appendChild(btn);
+    return { spd, btn };
+  });
+
+  function setPlaybackSpeed(newSpeed) {
+    if (!SPEED_OPTIONS.includes(newSpeed)) return;
+    playbackSpeed = newSpeed;
+    stage.style.setProperty("--sim-speed", String(newSpeed));
+    scheduler.setSpeed(newSpeed);
+    autoScheduler.setSpeed(newSpeed);
+    applyAudioSpeed();
+    for (const item of speedButtons) {
+      item.btn.classList.toggle("active", item.spd === newSpeed);
+    }
+    updateHeader();
+  }
+
+  function stepSpeed(delta) {
+    const idx = SPEED_OPTIONS.indexOf(playbackSpeed);
+    const nextIdx = Math.max(0, Math.min(SPEED_OPTIONS.length - 1, idx + delta));
+    setPlaybackSpeed(SPEED_OPTIONS[nextIdx]);
+  }
 
   const dots = scenes.map((_, idx) => {
     const btn = document.createElement("button");
@@ -1537,10 +1604,7 @@
   }
 
   function clearAutoTimer() {
-    if (autoTimer) {
-      clearTimeout(autoTimer);
-      autoTimer = null;
-    }
+    autoScheduler.clearAll();
   }
 
   function updateHeader() {
@@ -1552,14 +1616,15 @@
       return;
     }
     const voiceTag = voiceEnabled ? " · Có giọng đọc" : " · Tắt tiếng (M)";
+    const speedTag = playbackSpeed !== 1 ? ` · ${playbackSpeed}x` : "";
     if (scheduler.paused) {
-      modeBadge.textContent = "Đang tạm dừng (P)";
+      modeBadge.textContent = "Đang tạm dừng (P)" + speedTag;
       modeBadge.className = "mode-badge paused";
     } else if (autoPlay) {
-      modeBadge.textContent = "Tự động phát (A)" + voiceTag;
+      modeBadge.textContent = "Tự động phát (A)" + voiceTag + speedTag;
       modeBadge.className = "mode-badge";
     } else if (!voiceEnabled) {
-      modeBadge.textContent = "Đã tắt giọng đọc (M)";
+      modeBadge.textContent = "Đã tắt giọng đọc (M)" + speedTag;
       modeBadge.className = "mode-badge";
     } else {
       modeBadge.className = "mode-badge hidden";
@@ -1590,26 +1655,27 @@
     if (voiceEnabled && src) {
       voicePlayer.src = src;
       voicePlayer.currentTime = 0;
+      applyAudioSpeed();
       voicePlayer.onended = () => {
         voicePlayer.onended = null;
         if (!autoPlay || scheduler.paused) return;
-        autoTimer = setTimeout(advanceAutoStep, GAP_MS);
+        autoScheduler.after(GAP_MS, advanceAutoStep);
       };
       voicePlayer.onerror = () => {
         voicePlayer.onerror = null;
         if (!autoPlay || scheduler.paused) return;
-        autoTimer = setTimeout(advanceAutoStep, durMs + GAP_MS);
+        autoScheduler.after(durMs + GAP_MS, advanceAutoStep);
       };
       const playPromise = voicePlayer.play();
       if (playPromise && typeof playPromise.catch === "function") {
         playPromise.catch(() => {
           voicePlayer.onended = null;
           if (!autoPlay || scheduler.paused) return;
-          autoTimer = setTimeout(advanceAutoStep, durMs + GAP_MS);
+          autoScheduler.after(durMs + GAP_MS, advanceAutoStep);
         });
       }
     } else {
-      autoTimer = setTimeout(advanceAutoStep, durMs + GAP_MS);
+      autoScheduler.after(durMs + GAP_MS, advanceAutoStep);
     }
   }
 
@@ -1623,6 +1689,7 @@
   function startAutoPlay() {
     autoPlay = true;
     scheduler.resume();
+    autoScheduler.resume();
     goToScene(0);
   }
 
@@ -1665,16 +1732,18 @@
       case "P":
         if (scheduler.paused) {
           scheduler.resume();
+          autoScheduler.resume();
           if (autoPlay) {
             if (voiceEnabled && voicePlayer.src && voicePlayer.paused && !voicePlayer.ended) {
+              applyAudioSpeed();
               voicePlayer.play().catch(() => {});
-            } else {
+            } else if (autoScheduler.timers.size === 0) {
               playSegmentAudio(scenes[currentIdx].currentSegmentKey());
             }
           }
         } else {
           scheduler.pause();
-          clearAutoTimer();
+          autoScheduler.pause();
           if (!voicePlayer.paused) {
             try { voicePlayer.pause(); } catch (_) {}
           }
@@ -1702,6 +1771,19 @@
           playSegmentAudio(scenes[currentIdx].currentSegmentKey());
         }
         updateHeader();
+        break;
+      case "-":
+      case "_":
+      case "[":
+        stepSpeed(-1);
+        break;
+      case "+":
+      case "=":
+      case "]":
+        stepSpeed(1);
+        break;
+      case "0":
+        setPlaybackSpeed(1);
         break;
       case "h":
       case "H":

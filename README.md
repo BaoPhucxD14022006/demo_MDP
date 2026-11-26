@@ -102,6 +102,7 @@ Các phím tắt trong Demo HTML:
 - **R**: Chạy lại cảnh hiện tại
 - **A**: Tự động phát toàn bộ demo (~5 phút) từ đầu đến cuối
 - **M**: Bật/tắt giọng đọc AI khi phát tự động
+- **-** / **+** (hoặc **[** / **]**, **0**): Giảm / tăng tốc độ phát (`0.5x`, `0.75x`, `1x`, `1.5x`, `2x` — đồng bộ cả giọng đọc và hoạt ảnh; bấm `0` hoặc click thanh nút góc phải trên để đặt lại `1x`)
 - **F**: Bật/tắt toàn màn hình
 - **H**: Ẩn/hiện thanh phím tắt dưới đáy màn hình
 
@@ -164,6 +165,7 @@ python scripts/export_figures.py
 | **Space** | Trong GridWorld 4x4 | Tạm dừng (Pause) / Tiếp tục (Resume) mô phỏng |
 | **N** | Trong GridWorld 4x4 | Thực hiện **1 bước tiếp theo** (Next step) hoặc 1 vòng lặp Bellman |
 | **R** | Trong GridWorld 4x4 | Đặt lại vị trí Robot về ô xuất phát (Reset Episode) |
+| **-** / **+** (hoặc **0**) | Trong GridWorld 4x4 | Điều chỉnh tốc độ mô phỏng (`0.5x`, `0.75x`, `1x`, `1.5x`, `2x`; `0` để về `1x`) |
 
 ---
 

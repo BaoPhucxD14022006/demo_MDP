@@ -182,7 +182,8 @@ class GridWorldView:
         # Trạng thái giao diện (5 giai đoạn tinh gọn)
         self.current_phase: int = 1
         self.is_paused: bool = False
-        self.sim_speed: int = 4
+        self.speed_options: list[float] = [0.5, 0.75, 1.0, 1.5, 2.0]
+        self.speed_idx: int = 2
         self.last_step_time: int = 0
         self.vi_iter_idx: int = len(self.history) - 1
 
@@ -234,7 +235,7 @@ class GridWorldView:
         self.btn_play = Button(pygame.Rect(40, ctrl_y, 110, 38), "Tạm dừng", "toggle_play")
         self.btn_step = Button(pygame.Rect(160, ctrl_y, 100, 38), "Bước tiếp", "step")
         self.btn_reset = Button(pygame.Rect(270, ctrl_y, 100, 38), "Đặt lại (R)", "reset")
-        self.btn_speed = Button(pygame.Rect(380, ctrl_y, 110, 38), "Tốc độ: 2x", "speed")
+        self.btn_speed = Button(pygame.Rect(380, ctrl_y, 128, 38), "Tốc độ: 1x", "speed")
 
     def set_phase(self, phase: int) -> None:
         """Chuyển đổi giữa 5 giai đoạn thuyết trình."""
@@ -320,6 +321,12 @@ class GridWorldView:
         elif self.agent_step_count >= 50:
             self.agent_status = "Hết số bước tối đa (50 bước)"
 
+    def _set_speed_idx(self, idx: int) -> None:
+        """Cập nhật mức tốc độ mô phỏng và nhãn nút bấm."""
+        self.speed_idx = max(0, min(len(self.speed_options) - 1, idx))
+        spd = self.speed_options[self.speed_idx]
+        self.btn_speed.text = f"Tốc độ: {spd:g}x"
+
     def handle_event(self, event: pygame.event.Event, mouse_pos: tuple[int, int]) -> None:
         """Xử lý sự kiện bàn phím và chuột trong Demo 1."""
         if event.type == pygame.KEYDOWN:
@@ -339,6 +346,12 @@ class GridWorldView:
                         self.pi_step_idx = min(len(self.pi_history) - 1, self.pi_step_idx + 1)
                 else:
                     self.step_simulation()
+            elif event.key in (pygame.K_MINUS, pygame.K_KP_MINUS, pygame.K_LEFTBRACKET):
+                self._set_speed_idx(self.speed_idx - 1)
+            elif event.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS, pygame.K_RIGHTBRACKET):
+                self._set_speed_idx(self.speed_idx + 1)
+            elif event.key == pygame.K_0:
+                self._set_speed_idx(2)
             elif pygame.K_1 <= event.key <= pygame.K_5:
                 self.set_phase(event.key - pygame.K_0)
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -377,25 +390,18 @@ class GridWorldView:
                     self.vi_iter_idx = 0
                     self.pi_step_idx = 0
             elif self.btn_speed.rect.collidepoint(mouse_pos):
-                if self.sim_speed == 2:
-                    self.sim_speed = 4
-                    self.btn_speed.text = "Tốc độ: 2x"
-                elif self.sim_speed == 4:
-                    self.sim_speed = 8
-                    self.btn_speed.text = "Tốc độ: 4x"
-                else:
-                    self.sim_speed = 2
-                    self.btn_speed.text = "Tốc độ: 1x"
+                self._set_speed_idx((self.speed_idx + 1) % len(self.speed_options))
 
     def update(self, current_time: int) -> None:
         """Cập nhật trạng thái mô phỏng theo FPS."""
-        step_interval = 1000 // self.sim_speed
+        speed = self.speed_options[self.speed_idx]
+        step_interval = int(400 / speed)
         if not self.is_paused and (current_time - self.last_step_time > step_interval):
             if self.current_phase in (2, 4):
                 if self.agent_status == "Đang chạy...":
                     self.step_simulation()
                 else:
-                    if current_time - self.last_step_time > 1500:
+                    if current_time - self.last_step_time > int(1500 / speed):
                         self.reset_agent()
             elif self.current_phase == 3:
                 if self.dp_algo_mode == "VI":
@@ -408,7 +414,7 @@ class GridWorldView:
                 if self.tab5_opt_status == "Đang chạy..." or self.tab5_risky_status == "Đang chạy...":
                     self.step_simulation()
                 else:
-                    if current_time - self.last_step_time > 2000:
+                    if current_time - self.last_step_time > int(2000 / speed):
                         self.reset_agent()
             self.last_step_time = current_time
 
